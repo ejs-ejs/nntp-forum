@@ -53,8 +53,7 @@ list($subscribed_messages, $subscribed_messages_file) = load_subscriptions();
 $nntp->command('list active ' . $group, 215);
 $group_info = $nntp->get_text_response();
 list($name, $last_article_number, $first_article_number, $post_flag) = explode(' ', $group_info);
-//$posting_allowed = ($post_flag != 'n');
-$posting_allowed = 0;
+$posting_allowed = $CONFIG['nntp']['can_post'] && ($post_flag != 'n');
 
 // Select the specified newsgroup for later content retrieval. We know it does exist (otherwise
 // get_message_tree() would have failed).
@@ -76,7 +75,7 @@ $body_class = 'messages';
 // within the function (otherwise we could use an iterator).
 function traverse_tree($tree_level){
 	global $nntp, $message_infos, $group, $posting_allowed, $tracker, $topic_number, $CONFIG, $subscribed_messages, $subscribed_messages_file;
-	
+
 	// Default storage area for each message. This array is used to reset the storage area for the event
 	// handlers after a message is parsed.
 	$empty_message_data = array(
@@ -88,11 +87,11 @@ function traverse_tree($tree_level){
 	);
 	// Storage area for message parser event handlers
 	$message_data = $empty_message_data;
-	
+
 	// Setup the message parser events to record the first text/plain part and record attachment
 	// information if present.
 	$message_parser = MessageParser::for_text_and_attachments($message_data);
-	
+
 	// The following scary bit of code extends the message parser to generate image previews while
 	// the message is parsed. It is event driven code like the rest of the parser. We wrap new anonymous
 	// functions around the events thar are already there.
@@ -104,17 +103,17 @@ function traverse_tree($tree_level){
 		$old_part_header = $message_parser->events['part-header'];
 		$old_record_attachment_size = $message_parser->events['record-attachment-size'];
 		$old_part_end = $message_parser->events['part-end'];
-		
+
 		// State variables used across our event handlers
 		$message_id;
 		$raw_data = null;
-		
+
 		// Only record the message ID from the message headers. We need it to build a unique hash.
 		$message_parser->events['message-header'] = function($headers) use($old_message_header, &$message_id){
 			$message_id = $headers['message-id'];
 			return $old_message_header($headers);
 		};
-		
+
 		// If we got an image and it's not already in the thumbnail cache set `$raw_data` so the other
 		// events will take action.
 		$message_parser->events['part-header'] = function($headers, $content_type, $content_type_params) use($old_part_header, &$raw_data, &$message_id, &$message_data){
@@ -123,17 +122,17 @@ function traverse_tree($tree_level){
 				$last_index = count($message_data['attachments']) - 1;
 				$display_name = $message_data['attachments'][$last_index]['name'];
 				$cache_name = md5($message_id . $display_name).'.jpg';
-				$img_name = md5($message_id . $display_name).'img.jpg';
+				$img_name = md5($message_id . $display_name).'.img.jpg';
 				$message_data['attachments'][$last_index]['preview'] = $cache_name;
 				$message_data['attachments'][$last_index]['img'] = $img_name;
-				
+
 				// If there is no cached version available kick of the data recording and preview generation
 				if ( ! file_exists(ROOT_DIR . '/public/thumbnails/' . $cache_name) )
 					$raw_data = array();
 			}
 			return $content_event;
 		};
-		
+
 		// Record raw image data if requested. Append each data chunk to the `$raw_data` array to avoid
 		// to many concatinations.
 		$message_parser->events['record-attachment-size'] = function($line) use($old_record_attachment_size, &$raw_data){
@@ -141,7 +140,7 @@ function traverse_tree($tree_level){
 				$raw_data[] = $line;
 			return $old_record_attachment_size($line);
 		};
-		
+
 		// We're at the end of an MIME part. If we got raw data to process load the actual image from them.
 		// Create a thumbnail version and put it into the cache.
 		$message_parser->events['part-end'] = function() use($old_part_end, $CONFIG, &$raw_data, &$message_data){
@@ -149,11 +148,11 @@ function traverse_tree($tree_level){
 				$data = join('', $raw_data);
 				$image = @imagecreatefromstring($data);
 				$preview_created = false;
-				
+
 				if ($image) {
 					$width = imagesx($image);
 					$height = imagesy($image);
-					
+
 					if ($width > $height) {
 						// Landscape format
 						$preview_width = $CONFIG['thumbnails']['width'];
@@ -163,37 +162,37 @@ function traverse_tree($tree_level){
 						$preview_height = $CONFIG['thumbnails']['height'];
 						$preview_width = $width / ($height / $CONFIG['thumbnails']['height']);
 					}
-					
+
 					$preview_image = imagecreatetruecolor($preview_width, $preview_height);
 					imagecopyresampled($preview_image, $image, 0, 0, 0, 0, $preview_width, $preview_height, $width, $height);
-					
+
 					$last_index = count($message_data['attachments']) - 1;
 					$cache_name = $message_data['attachments'][$last_index]['preview'];
 					$img_name = $message_data['attachments'][$last_index]['img'];
-					
+
 					$preview_created = @imagejpeg($preview_image, ROOT_DIR . '/public/thumbnails/' . $cache_name, $CONFIG['thumbnails']['quality']);
 					$img_created = @imagejpeg($image, ROOT_DIR . '/public/thumbnails/' . $img_name, $CONFIG['thumbnails']['quality']);
 					imagedestroy($preview_image);
 					imagedestroy($image);
 
 				}
-				
+
 				if (!$preview_created) {
 					// If we could not create the preview kill the preview name from the message data
 					$last_index = count($message_data['attachments']) - 1;
 					unset($message_data['attachments'][$last_index]['preview']);
 				}
-				
+
 				$raw_data = null;
 			}
 			return $old_part_end();
 		};
 	}
-	
+
 	echo("<ul>\n");
 	foreach($tree_level as $id => $replies){
 		$overview = $message_infos[$id];
-		
+
 		list($status,) = $nntp->command('article ' . $id, array(220, 430));
 		if ($status == 220){
 			$nntp->get_text_response_per_line(array($message_parser, 'parse_line'));
@@ -204,13 +203,13 @@ function traverse_tree($tree_level){
 			$content = '<p class="empty">' . l('messages', 'deleted') . '</p>';
 			$message_data['attachments'] = array();
 		}
-		
+
 		echo("<li>\n");
 		$unread_class = ( $tracker and $tracker->is_message_unread($group, $topic_number, $overview['number']) ) ? ' class="unread"' : '';
 		printf('<article id="message-%d" data-number="%d" data-id="%s"%s>' . "\n", $overview['number'], $overview['number'], ha($message_data['id']), $unread_class);
 		echo("	<header>\n");
 		echo("		<p>");
-		echo('			' . l('messages', 'message_header', 
+		echo('			' . l('messages', 'message_header',
 //			sprintf('<a href="mailto:%1$s" title="%1$s">%2$s</a>', ha($overview['author_mail']), h($overview['author_name'])),
 			sprintf('<p>%2$s</a>', ha($overview['author_mail']), h($overview['author_name'])),
 			timezone_aware_date($overview['date'], l('messages', 'message_header_date_format'))
@@ -219,7 +218,7 @@ function traverse_tree($tree_level){
 		echo("		</p>\n");
 		echo("	</header>\n");
 		echo('	' . $content . "\n");
-		
+
 		if ( ! empty($message_data['attachments']) ){
 			echo('	<ul class="attachments">' . "\n");
 			echo('		<li>' . lh('messages', 'attachments') . '</li>' . "</br>\n");
@@ -240,14 +239,14 @@ function traverse_tree($tree_level){
 			}
 			echo("	</ul>\n");
 		}
-		
+
 		echo('		<ul class="actions">' . "\n");
 		if($posting_allowed)
 			echo('			<li class="new message"><a href="#">' . l('messages', 'answer') . '</a></li>' . "\n");
-		
+
 		if($CONFIG['sender_is_self']($overview['author_mail'], $CONFIG['nntp']['user']))
 			echo('			<li class="destroy message"><a href="#">' . l('messages', 'delete') . '</a></li>' . "\n");
-		
+
 		if ($subscribed_messages_file) {
 			if (!in_array($message_data['id'], $subscribed_messages)) {
 				echo('			<li class="new subscription"><a href="#">' . l('messages', 'subscribe') . '</a></li>' . "\n");
@@ -257,21 +256,21 @@ function traverse_tree($tree_level){
 				echo('			<li class="destroy subscription"><a href="#">' . l('messages', 'unsubscribe') . '</a></li>' . "\n");
 			}
 		}
-		
+
 		echo('		</ul>' . "\n");
-		
+
 		echo("</article>\n");
-		
+
 		// Reset message variables to make a clean start for the next message
 		$message_parser->reset();
 		$message_data = $empty_message_data;
-		
+
 		if ( count($replies) > 0 )
 			traverse_tree($replies);
-		
+
 		echo("</li>\n");
 	}
-	
+
 	echo("</ul>\n");
 }
 
@@ -283,15 +282,15 @@ if ($tracker)
 ?>
 
 <form action="/<?= urlencode($group) ?>/<?= urlencode($topic_number) ?>" method="post" enctype="multipart/form-data" class="message">
-	
+
 	<ul class="error">
 		<li id="message_body_error"><?= lh('message_form', 'errors', 'missing_body') ?></li>
 	</ul>
-	
+
 	<section class="help">
-		<?= l('message_form', 'format_help') ?> 
+		<?= l('message_form', 'format_help') ?>
 	</section>
-	
+
 	<section class="fields">
 		<p>
 			<textarea name="body" required id="message_body"></textarea>
@@ -302,18 +301,18 @@ if ($tracker)
 		</dl>
 		<p class="buttons">
 			<button class="preview recommended"><?= lh('message_form', 'preview_button') ?></button>
-			<?= lh('message_form', 'button_separator') ?> 
+			<?= lh('message_form', 'button_separator') ?>
 			<button class="create"><?= lh('message_form', 'create_answer_button') ?></button>
-			<?= lh('message_form', 'button_separator') ?> 
+			<?= lh('message_form', 'button_separator') ?>
 			<button class="cancel"><?= lh('message_form', 'cancel_button') ?></button>
 		</p>
 	</section>
-	
+
 	<article id="post-preview">
 		<header>
 			<p><?= lh('message_form', 'preview_heading') ?></p>
 		</header>
-		
+
 		<div></div>
 	</article>
 </form>

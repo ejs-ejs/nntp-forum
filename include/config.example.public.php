@@ -2,19 +2,19 @@
 
 // This is the default configuration file for the NNTP forum. This file contains the details
 // of how the NNTP forum interacts with your infrastructure.
-// 
+//
 // If the environment variable `ENVIRONMENT` is set a config file for that special
 // environment is loaded. If `ENVIRONMENT` is set to `production` then `config.production.php`
 // is loaded instead of `config.php`. This is a good way to keep your testing and development
 // configuration seperate from your production configuration.
-// 
+//
 // Environment variables can usually be set in the webserver configuration. In case of the
 // Apache2 webserver you can use the `SetEnv` e.g. in the virtual host of the NNTP forum.
-// 
+//
 // This config file is also used by the `clean-expired-trackers` cron job
 // (`cron-jobs/clean-expired-trackers.php`). This cron job can also take the `ENVIRONMENT`
 // environment variable to load a config file for a specific environment.
-// 
+//
 // For the cron job he variables `$_SERVER['PHP_AUTH_USER']` and `$_SERVER['PHP_AUTH_PW']`
 // are both set to `null` in the config file.
 
@@ -42,14 +42,16 @@ return array(
 				'cafile' => '/path/to/yourcert.pem',
 			)
 		),
-		
+		// posting allowed?
+		// if '1', posting will be determined byt the goup info
+		'can_post' => 1,
 		// The login for the NNTP server. By default we pick up the HTTP authentication configured in the
 		// webserver. If you want a public reader you can configure the NNTP user here that will be used
 		// by the frontend. If the NNTP server requires no authentication specify `null` as user.
 		'user' => null,
 		'pass' => null
 	),
-	
+
 	// Config options for the newsgroup index page
 	'newsgroups' => array(
 		// An RFC 977 wildmat (http://tools.ietf.org/html/rfc977#section-3.8) that specifies which newsgroups
@@ -67,22 +69,22 @@ return array(
 		// This will sort the group list alphabetically by the group names (reverse array key sort).
 		'order' => null
 	),
-	
+
 	// The title of the website shown in the header of each page.
 	// If you want different title for different languages you can use an array instead of a simple string:
 	// 	'title' => array('en' => 'FooBar message board', 'de' => 'FooBar Nachrichtenzentrale'),
 	'title' => 'Newsgroups Forum',
-	
+
 	// Newsgroups howto link (e.g. 'http://example.com/news-howto.html'). This link is displayed
 	// in the footer to provide a clue for newcommers on how to set up the newsgroups in
 	// Thunderbird, etc.
 	'howto_url' => null,
-	
+
 	/**
 	 * A list of newsfeeds. The key of every entry in this array will be the URL for the newsfeed (e.g. "offiziell" will
 	 * be available as "/offiziell.xml" on the website. Each newsfeed needs to define the following configuration
 	 * options:
-	 * 
+	 *
 	 * 	'newsgroups': An RFC 977 wildmat (http://tools.ietf.org/html/rfc977#section-3.8) that lists the newsgroups
 	 * 		that will be searched for new messages. Examples: "hdm.allgemein", "hdm.mi.*-offiziell",
 	 * 		"hdm.*,!hdm.test.*" (matches all newsgroups in "hdm" but not any "hdm.test.*" newsgroups).
@@ -103,7 +105,7 @@ return array(
 		)
 		*/
 	),
-	
+
 	// Options for the image thumbnail generation. The GD PHP module needs to be installed for this to work!
 	'thumbnails' => array(
 		// Set to `true` to enable thumbnail generation. PLEASE BE AWARE: This feature may eat up your server
@@ -120,7 +122,7 @@ return array(
 		// After that time (in seconds) thumbnails are deleted by the clean-expired-trackers cronjob
 		'expire_time' => 60 * 60 * 24 * 7  // one week
 	),
-	
+
 	// Connection and search settings for the LDAP name lookup. This lookup is performed before a new message
 	// is send to the NNTP server. It translates the login of the user into a display name that can then be used to
 	// build a proper sender address (see below).
@@ -132,24 +134,24 @@ return array(
 		'pass' => 'unknown',
 		'directory' => 'ou=userlist,dc=example,dc=com'
 	),
-	
+
 	// This function here builds the sender address of a new message (the thing that shows up in the "From" field
 	// of the message). $login is the name used to connect to the NNTP server. $name is whatever the LDAP name
 	// lookup returned (see above). If no LDAP name lookup is configured $name is the same as $login.
 	'sender_address' => function($login, $name){
 		return "Anonymous <anonymous@anonymous.com>";
 	},
-	
+
 	// Function that determines if the specified address $mail belongs to the user $login. Right now this is used
 	// to display the delete button only for messages you posted yourself (that is for all messages where this
 	// function returns `true`).
 	'sender_is_self' => function($mail, $login){
 		return false;
 	},
-	
+
 	// The language file (locale) used for the forum.
 	'lang' => autodetect_locale_with_fallback('en'),
-	
+
 	// The following stuff is a list of things a user can do when he sees an error page. You can
 	// configure this list for every error page and every locale. For example you can add a note
 	// to the `unauthorized` error page that users should send a mail to your support staff.
@@ -158,10 +160,10 @@ return array(
 		'not_found' => array(),
 		'unauthorized' => array()
 	),
-	
+
 	'cache_dir' => ROOT_DIR . '/cache',
 	'cache_lifetime' => 5 * 60,  // 5 minutes
-	
+
 	// Unread tracker settings
 	'unread_tracker' => array(
 		// This is the path to the file used to track unread topics. As default each user gets his
@@ -176,7 +178,7 @@ return array(
 		// will prevent a slow disk overflow when users come and go.
 		'unused_expire_time' => 60 * 60 * 24 * 30 * 6
 	),
-	
+
 	// Settings for mail notifications about new messages. For this to work you also have to enable
 	// the /cron-jobs/send-mail-notifications.php cron job on your system.
 	'subscriptions' => array(
@@ -184,7 +186,7 @@ return array(
 		// disable mail notifications.
 		'watchlist' => null,
 	),
-	
+
 	// The user agent string added as a message header. Important for others to see who is
 	// responsible for an idealistically UTF-8 encoded message.
 	'user_agent' => 'NNTP-Forum/1.1.1'

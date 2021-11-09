@@ -19,8 +19,7 @@ if ( $message_tree == null )
 $nntp->command('list active ' . $group, 215);
 $group_info = $nntp->get_text_response();
 list($name, $last_article_number, $first_article_number, $post_flag) = explode(' ', $group_info);
-//$posting_allowed = ($post_flag != 'n');
-$posting_allowed = 0;
+$posting_allowed = $CONFIG['nntp']['can_post'] && ($post_flag != 'n');
 
 $nntp->close();
 
@@ -52,17 +51,17 @@ foreach($message_tree as $message_id => $replies){
 		if ( $message_infos[$id]['date'] > $message_infos[$last_message_id]['date'] )
 			$last_message_id = $id;
 	}
-	
+
 	$latest_message = $message_infos[$last_message_id];
 	$topic_message = $message_infos[$message_id];
 	$reply_count = 1 + count($message_tree[$message_id], COUNT_RECURSIVE);
-	
+
 	// is_topic_unread() returns false if the is no unread marker or the next unread message number if there is
 	$next_unread_message_num = $tracker ? $tracker->is_topic_unread($group, $topic_message['number']) : false;
 	// Don't mark as unread if there is no unread marker. If there is mark it as unread if the next unread
 	// message number is older or equal to the current latest message number.
 	$unread = ($next_unread_message_num === false) ? false : ( $next_unread_message_num  <= $latest_message['number'] );
-	
+
 	$topics[] = array(
 		'message' => $topic_message,
 		'latest_message' => $latest_message,
@@ -94,17 +93,19 @@ $body_class = 'topics';
 	<li class="all read"><a href="/<?= urlencode($group) ?>?all-read"><?= lh('topics', 'all_read') ?></a></li>
 </ul>
 
+
+<? if($posting_allowed): ?>
 <form action="/<?= urlencode($group) ?>" method="post" enctype="multipart/form-data" class="message">
-	
+
 	<ul class="error">
 		<li id="message_subject_error"><?= lh('message_form', 'errors', 'missing_subject') ?></li>
 		<li id="message_body_error"><?= lh('message_form', 'errors', 'missing_body') ?></li>
 	</ul>
-	
+
 	<section class="help">
-		<?= l('message_form', 'format_help') ?> 
+		<?= l('message_form', 'format_help') ?>
 	</section>
-	
+
 	<section class="fields">
 		<p>
 			<label for="message_subject"><?= lh('message_form', 'topic_label') ?></label>
@@ -119,21 +120,22 @@ $body_class = 'topics';
 		</dl>
 		<p class="buttons">
 			<button class="preview recommended"><?= lh('message_form', 'preview_button') ?></button>
-			<?= lh('message_form', 'button_separator') ?> 
+			<?= lh('message_form', 'button_separator') ?>
 			<button class="create"><?= lh('message_form', 'create_topic_button') ?></button>
-			<?= lh('message_form', 'button_separator') ?> 
+			<?= lh('message_form', 'button_separator') ?>
 			<button class="cancel"><?= lh('message_form', 'cancel_button') ?></button>
 		</p>
 	</section>
-	
+
 	<article id="post-preview">
 		<header>
 			<p><?= lh('message_form', 'preview_heading_prefix') ?> <span></span></p>
 		</header>
-		
+
 		<div></div>
 	</article>
 </form>
+<? endif ?>
 
 <table>
 	<thead>
@@ -147,7 +149,7 @@ $body_class = 'topics';
 <? if ( empty($message_tree) ): ?>
 		<tr>
 			<td colspan="3" class="empty">
-				<?= lh('topics', 'no_topics') ?> 
+				<?= lh('topics', 'no_topics') ?>
 			</td>
 		</tr>
 <? else: ?>
@@ -164,7 +166,7 @@ $body_class = 'topics';
 //					sprintf('<abbr title="%s">%s</abbr>', ha($topic['latest_message']['author_mail']), h($topic['latest_message']['author_name'])),
 					sprintf('<abbr title="%s">%s</abbr>', ha($topic['latest_message']), h($topic['latest_message']['author_name'])),
 					timezone_aware_date($topic['latest_message']['date'], l('topics', 'last_post_info_date_format'))
-				) ?> 
+				) ?>
 			</td>
 		</tr>
 <?	endforeach ?>
