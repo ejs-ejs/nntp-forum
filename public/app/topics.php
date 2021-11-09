@@ -19,7 +19,8 @@ if ( $message_tree == null )
 $nntp->command('list active ' . $group, 215);
 $group_info = $nntp->get_text_response();
 list($name, $last_article_number, $first_article_number, $post_flag) = explode(' ', $group_info);
-$posting_allowed = ($post_flag != 'n');
+//$posting_allowed = ($post_flag != 'n');
+$posting_allowed = 0;
 
 $nntp->close();
 
@@ -160,7 +161,8 @@ $body_class = 'topics';
 			<td><?= $topic['reply_count'] ?></td>
 			<td>
 				<?= l('topics', 'last_post_info',
-					sprintf('<abbr title="%s">%s</abbr>', ha($topic['latest_message']['author_mail']), h($topic['latest_message']['author_name'])),
+//					sprintf('<abbr title="%s">%s</abbr>', ha($topic['latest_message']['author_mail']), h($topic['latest_message']['author_name'])),
+					sprintf('<abbr title="%s">%s</abbr>', ha($topic['latest_message']), h($topic['latest_message']['author_name'])),
 					timezone_aware_date($topic['latest_message']['date'], l('topics', 'last_post_info_date_format'))
 				) ?> 
 			</td>

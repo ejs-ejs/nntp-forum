@@ -53,7 +53,8 @@ list($subscribed_messages, $subscribed_messages_file) = load_subscriptions();
 $nntp->command('list active ' . $group, 215);
 $group_info = $nntp->get_text_response();
 list($name, $last_article_number, $first_article_number, $post_flag) = explode(' ', $group_info);
-$posting_allowed = ($post_flag != 'n');
+//$posting_allowed = ($post_flag != 'n');
+$posting_allowed = 0;
 
 // Select the specified newsgroup for later content retrieval. We know it does exist (otherwise
 // get_message_tree() would have failed).
@@ -121,8 +122,10 @@ function traverse_tree($tree_level){
 			if ( $content_event == 'record-attachment-size' and preg_match('#image/.*#', $content_type) ){
 				$last_index = count($message_data['attachments']) - 1;
 				$display_name = $message_data['attachments'][$last_index]['name'];
-				$cache_name = md5($message_id . $display_name);
+				$cache_name = md5($message_id . $display_name).'.jpg';
+				$img_name = md5($message_id . $display_name).'img.jpg';
 				$message_data['attachments'][$last_index]['preview'] = $cache_name;
+				$message_data['attachments'][$last_index]['img'] = $img_name;
 				
 				// If there is no cached version available kick of the data recording and preview generation
 				if ( ! file_exists(ROOT_DIR . '/public/thumbnails/' . $cache_name) )
@@ -163,13 +166,16 @@ function traverse_tree($tree_level){
 					
 					$preview_image = imagecreatetruecolor($preview_width, $preview_height);
 					imagecopyresampled($preview_image, $image, 0, 0, 0, 0, $preview_width, $preview_height, $width, $height);
-					imagedestroy($image);
 					
 					$last_index = count($message_data['attachments']) - 1;
 					$cache_name = $message_data['attachments'][$last_index]['preview'];
+					$img_name = $message_data['attachments'][$last_index]['img'];
 					
 					$preview_created = @imagejpeg($preview_image, ROOT_DIR . '/public/thumbnails/' . $cache_name, $CONFIG['thumbnails']['quality']);
+					$img_created = @imagejpeg($image, ROOT_DIR . '/public/thumbnails/' . $img_name, $CONFIG['thumbnails']['quality']);
 					imagedestroy($preview_image);
+					imagedestroy($image);
+
 				}
 				
 				if (!$preview_created) {
@@ -205,7 +211,8 @@ function traverse_tree($tree_level){
 		echo("	<header>\n");
 		echo("		<p>");
 		echo('			' . l('messages', 'message_header', 
-			sprintf('<a href="mailto:%1$s" title="%1$s">%2$s</a>', ha($overview['author_mail']), h($overview['author_name'])),
+//			sprintf('<a href="mailto:%1$s" title="%1$s">%2$s</a>', ha($overview['author_mail']), h($overview['author_name'])),
+			sprintf('<p>%2$s</a>', ha($overview['author_mail']), h($overview['author_name'])),
 			timezone_aware_date($overview['date'], l('messages', 'message_header_date_format'))
 		) . "\n");
 		printf('			<a class="permalink" href="/%s/%d#message-%d">%s</a>' . "\n", urlencode($group), $topic_number, $overview['number'], l('messages', 'permalink'));
@@ -215,15 +222,20 @@ function traverse_tree($tree_level){
 		
 		if ( ! empty($message_data['attachments']) ){
 			echo('	<ul class="attachments">' . "\n");
-			echo('		<li>' . lh('messages', 'attachments') . '</li>' . "\n");
+			echo('		<li>' . lh('messages', 'attachments') . '</li>' . "</br>\n");
 			foreach($message_data['attachments'] as $attachment){
 				if ( isset($attachment['preview']) ) {
-					echo('		<li class="thumbnail" style="background-image: url(/thumbnails/' . $attachment['preview'] . ');">' . "\n");
+					$img_loc = '/thumbnails/'.urlencode($attachment['preview']);
+
+//					echo('		<li class="thumbnail" style="background-image: url(/thumbnails/' . $attachment['preview'] . ');">' . "\n");
+
+				        echo('<li class="thumbnail"><a href="/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']) . '"><img src="'.$img_loc.'" width="'.$CONFIG['thumbnails']['width'].'"></a>' . "\n");
+
 				} else {
 					echo('		<li>' . "\n");
 				}
-				echo('			<a href="/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']) . '">' . h($attachment['name']) . '</a>' . "\n");
-				echo('			(' . number_to_human_size($attachment['size']) . ')' . "\n");
+//				echo('			<a href="/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']) . '">' . h($attachment['name']) . '</a>' . "\n");
+//				echo('			(' . number_to_human_size($attachment['size']) . ')' . "\n");
 				echo('		</li>' . "\n");
 			}
 			echo("	</ul>\n");
