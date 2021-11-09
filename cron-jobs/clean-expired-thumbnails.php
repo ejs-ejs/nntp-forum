@@ -2,9 +2,7 @@
 <?php
 
 /**
- * The file is intended to be used as a cron job to clean out old tracker files for users that do not
- * use the NNTP forum. Tracker files which have not been updated (modified) for the time period
- * defined in the `unread_tracker_unused_expire_time` config option are deleted.
+ * The file is intended to be used as a cron job to clean out old thumbnail files
  *
  * To enable this cron job just create a symlink for it in the /etc/cron.daily directory.
  */
@@ -25,10 +23,10 @@ if ($_CONFIG_ENV = getenv('ENVIRONMENT'))
 else
 	$CONFIG = require( ROOT_DIR . '/include/config.php' );
 
-// Delete old tracker files
-$tracker_files = glob( dirname($CONFIG['unread_tracker']['file']) . '/*' );
-foreach($tracker_files as $file){
-	if ( filemtime($file) + $CONFIG['unread_tracker']['unused_expire_time'] < time() )
+// Delete old thumbnail files
+$thumbnail_files = glob( ROOT_DIR . '/public/thumbnails/*' );
+foreach($thumbnail_files as $file){
+	if ( filemtime($file) + $CONFIG['thumbnails']['expire_time'] < time() )
 		unlink($file);
 }
 
