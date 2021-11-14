@@ -180,7 +180,21 @@ function traverse_tree($tree_level){
 //					echo('DEBUG: attached video found: '. $img_name);
 				
 			}
+			
+			if ( $content_event == 'record-attachment-size' and preg_match('#application/pdf#', $content_type) ){
+				$last_index = count($message_data['attachments']) - 1;
+				$display_name = $message_data['attachments'][$last_index]['name'];
+				$message_data['attachments'][$last_index]['type'] = 'PDF';
+				
+				$cache_name = md5($message_id . $display_name).'.pdf';
+				$img_name = md5($message_id . $display_name).'.pdf';
+				$message_data['attachments'][$last_index]['image_format'] = 'PDF'; 
 
+				$message_data['attachments'][$last_index]['preview'] = $img_name;
+				$message_data['attachments'][$last_index]['img'] = $img_name;
+//				echo('DEBUG: attached PDF found: '. $img_name);
+				
+			}
 			return $content_event;
 		};
 
@@ -291,7 +305,12 @@ function traverse_tree($tree_level){
 					$img_loc = '/thumbnails/'.urlencode($attachment['preview']);
 
 //					echo('		<li class="thumbnail" style="background-image: url(/thumbnails/' . $attachment['preview'] . ');">' . "\n");
-					if ($attachment['type'] == 'VIDEO') {
+					if ($attachment['type'] == 'PDF') {
+						$img_loc = '/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']);
+					    echo '<li class="thumbnail"><object type="application/pdf" width="100px" height="500px" frameBorder="0"
+    scrolling="auto" ';
+						echo 'data="'.$img_loc.'"><a href="' . $img_loc .'">'.urlencode($attachment['name']).'</a></object></li>';
+					} elseif ($attachment['type'] == 'VIDEO') {
 							$img_loc = '/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']);
 					        echo '<li class="thumbnail"><a href="/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']) . '"><video width="'.$CONFIG['thumbnails']['width'].'" controls>';
 							if ($attachment['image_format'] == 'MP4') {
@@ -304,13 +323,15 @@ function traverse_tree($tree_level){
 							echo l("Unsupported video format.").' </video></a></li>' . "\n";	
 							}
 							echo l("Your browser does not support the video tag.").' </video></a></li>' . "\n";
-					} else{ 
+					} elseif ($attachment['type'] == 'IMAGE') { 
 						if ($attachment['image_format'] == 'GIF') {
 							$img_loc = '/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']);
 							echo('<li class="thumbnail"><a href="' . $img_loc . '"><img src="'.$img_loc.'" width="'.$CONFIG['thumbnails']['width'].'"></a></li>' . "\n");
 						} else {
 					        echo('<li class="thumbnail"><a href="/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']) . '"><img src="'.$img_loc.'" width="'.$CONFIG['thumbnails']['width'].'"></a></li>' . "\n");
 						}
+					} else {
+						echo('<li> You should not be here, bro.</li>');
 					}
 				} else {
 					echo('		<li>' . "\n");
