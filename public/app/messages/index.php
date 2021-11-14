@@ -54,6 +54,7 @@ $nntp->command('list active ' . $group, 215);
 $group_info = $nntp->get_text_response();
 list($name, $last_article_number, $first_article_number, $post_flag) = explode(' ', $group_info);
 $posting_allowed = $CONFIG['nntp']['can_post'] && ($post_flag != 'n');
+//$posting_allowed = 0;
 
 // Select the specified newsgroup for later content retrieval. We know it does exist (otherwise
 // get_message_tree() would have failed).
@@ -65,11 +66,9 @@ $breadcrumbs[$group] = '/' . $group;
 $breadcrumbs[$title] = '/' . $group . '/' . $topic_number;
 $scripts[] = 'messages.js';
 $body_class = 'messages';
-?>
 
-<h2><?= h($title) ?></h2>
+echo('<h2>' . h($title) . '</h2>');
 
-<?
 
 // A recursive tree walker function. Unfortunately necessary because we start the recursion
 // within the function (otherwise we could use an iterator).
@@ -100,7 +99,11 @@ function traverse_tree($tree_level){
 	if ( $CONFIG['thumbnails']['enabled'] and extension_loaded('gd') ){
 		// Original event handlers. Remember them here to call them later on.
 		$old_message_header = $message_parser->events['message-header'];
+
 		$old_part_header = $message_parser->events['part-header'];
+//			echo('DEBUG: parts-header event: ');
+//			print_r($old_part_header);
+
 		$old_record_attachment_size = $message_parser->events['record-attachment-size'];
 		$old_part_end = $message_parser->events['part-end'];
 
@@ -111,6 +114,9 @@ function traverse_tree($tree_level){
 		// Only record the message ID from the message headers. We need it to build a unique hash.
 		$message_parser->events['message-header'] = function($headers) use($old_message_header, &$message_id){
 			$message_id = $headers['message-id'];
+//				echo('DEBUG: message-header event: ');
+//				print_r($headers);
+
 			return $old_message_header($headers);
 		};
 
@@ -118,18 +124,52 @@ function traverse_tree($tree_level){
 		// events will take action.
 		$message_parser->events['part-header'] = function($headers, $content_type, $content_type_params) use($old_part_header, &$raw_data, &$message_id, &$message_data){
 			$content_event = $old_part_header($headers, $content_type, $content_type_params);
+
+			// image parsing goes here
 			if ( $content_event == 'record-attachment-size' and preg_match('#image/.*#', $content_type) ){
 				$last_index = count($message_data['attachments']) - 1;
 				$display_name = $message_data['attachments'][$last_index]['name'];
-				$cache_name = md5($message_id . $display_name).'.jpg';
-				$img_name = md5($message_id . $display_name).'.img.jpg';
-				$message_data['attachments'][$last_index]['preview'] = $cache_name;
-				$message_data['attachments'][$last_index]['img'] = $img_name;
+				$message_data['attachments'][$last_index]['type'] = 'IMAGE';
+				if (preg_match('#image/gif#', $content_type)) {
+					$cache_name = md5($message_id . $display_name).'.gif';
+					$img_name = md5($message_id . $display_name).'.gif';
+					$message_data['attachments'][$last_index]['image_format'] = 'GIF';
+					$message_data['attachments'][$last_index]['preview'] = $img_name;
+					$message_data['attachments'][$last_index]['img'] = $img_name;
+
+
+				} else {
+					$cache_name = md5($message_id . $display_name).'.jpg';
+					$img_name = md5($message_id . $display_name).'.img.jpg';
+					$message_data['attachments'][$last_index]['image_format'] = 'JPEG';
+					$message_data['attachments'][$last_index]['preview'] = $cache_name;
+					$message_data['attachments'][$last_index]['img'] = $img_name;
+
+				}
+//				echo('DEBUG: attached image found: '. $img_name);
 
 				// If there is no cached version available kick of the data recording and preview generation
 				if ( ! file_exists(ROOT_DIR . '/public/thumbnails/' . $cache_name) )
 					$raw_data = array();
+//			} else {
+//				echo('DEBUG: attachment found: '. $content_type);
+
 			}
+			// video parsing goes here
+			if ( $content_event == 'record-attachment-size' and preg_match('#video/.*#', $content_type) ){
+				$last_index = count($message_data['attachments']) - 1;
+				$display_name = $message_data['attachments'][$last_index]['name'];
+				$message_data['attachments'][$last_index]['type'] = 'VIDEO';
+				if (preg_match('#video/mp4#', $content_type)) {
+					$cache_name = md5($message_id . $display_name).'.mp4';
+					$img_name = md5($message_id . $display_name).'.mp4';
+					$message_data['attachments'][$last_index]['image_format'] = 'MP4';
+					$message_data['attachments'][$last_index]['preview'] = $img_name;
+					$message_data['attachments'][$last_index]['img'] = $img_name;
+//					echo('DEBUG: attached video found: '. $img_name);
+				}
+			}
+
 			return $content_event;
 		};
 
@@ -142,12 +182,19 @@ function traverse_tree($tree_level){
 		};
 
 		// We're at the end of an MIME part. If we got raw data to process load the actual image from them.
-		// Create a thumbnail version and put it into the cache.
+		// Create a thumbnail version and put it into the cache. 
 		$message_parser->events['part-end'] = function() use($old_part_end, $CONFIG, &$raw_data, &$message_data){
 			if ( $raw_data !== null ){
 				$data = join('', $raw_data);
-				$image = @imagecreatefromstring($data);
-				$preview_created = false;
+
+				if ($message_data['attachments'][$last_index]['type'] == 'VIDEO'){
+					$video = base64_decode($data);
+					$preview_created = true;
+					$img_created = file_put_contents(ROOT_DIR . '/public/thumbnails/' . $img_name, $video);
+				} else {
+					$image = @imagecreatefromstring($data);
+					$preview_created = false;
+				} 
 
 				if ($image) {
 					$width = imagesx($image);
@@ -170,12 +217,18 @@ function traverse_tree($tree_level){
 					$cache_name = $message_data['attachments'][$last_index]['preview'];
 					$img_name = $message_data['attachments'][$last_index]['img'];
 
-					$preview_created = @imagejpeg($preview_image, ROOT_DIR . '/public/thumbnails/' . $cache_name, $CONFIG['thumbnails']['quality']);
-					$img_created = @imagejpeg($image, ROOT_DIR . '/public/thumbnails/' . $img_name, $CONFIG['thumbnails']['quality']);
+
+					if ($message_data['attachments'][$last_index]['image_format'] == 'GIF') {
+						$preview_created = 1;
+						$img_created = @imagegif($image, ROOT_DIR . '/public/thumbnails/' . $img_name);
+					} else {
+						$preview_created = @imagejpeg($preview_image, ROOT_DIR . '/public/thumbnails/' . $cache_name, $CONFIG['thumbnails']['quality']);
+						$img_created = @imagejpeg($image, ROOT_DIR . '/public/thumbnails/' . $img_name, $CONFIG['thumbnails']['quality']);
+					}
 					imagedestroy($preview_image);
 					imagedestroy($image);
 
-				}
+				} 
 
 				if (!$preview_created) {
 					// If we could not create the preview kill the preview name from the message data
@@ -227,14 +280,33 @@ function traverse_tree($tree_level){
 					$img_loc = '/thumbnails/'.urlencode($attachment['preview']);
 
 //					echo('		<li class="thumbnail" style="background-image: url(/thumbnails/' . $attachment['preview'] . ');">' . "\n");
-
-				        echo('<li class="thumbnail"><a href="/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']) . '"><img src="'.$img_loc.'" width="'.$CONFIG['thumbnails']['width'].'"></a>' . "\n");
-
+					if ($attachment['type'] == 'VIDEO') {
+							$img_loc = '/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']);
+					        echo '<li class="thumbnail"><a href="/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']) . '"><video width="'.$CONFIG['thumbnails']['width'].'" controls>';
+							if ($attachment['image_format'] == 'MP4') {
+							echo '<source src="'.$img_loc.'" type="video/mp4">';
+							} elseif ($attachment['image_format'] == 'OGG') {
+							echo '<source src="'.$img_loc.'" type="video/ogg">';
+							} elseif ($attachment['image_format'] == 'WEBM') {
+							echo '<source src="'.$img_loc.'" type="video/webm">';
+							} else {
+							echo l("Unsupported video format.").' </video></a></li>' . "\n";	
+							}
+							echo l("Your browser does not support the video tag.").' </video></a></li>' . "\n";
+					} else{ 
+						if ($attachment['image_format'] == 'GIF') {
+							$img_loc = '/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']);
+							echo('<li class="thumbnail"><a href="' . $img_loc . '"><img src="'.$img_loc.'" width="'.$CONFIG['thumbnails']['width'].'"></a></li>' . "\n");
+						} else {
+					        echo('<li class="thumbnail"><a href="/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']) . '"><img src="'.$img_loc.'" width="'.$CONFIG['thumbnails']['width'].'"></a></li>' . "\n");
+						}
+					}
 				} else {
 					echo('		<li>' . "\n");
+					echo('			<a href="/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']) . '">' . h($attachment['name']) . '</a>' . "\n");
+					echo('			(' . number_to_human_size($attachment['size']) . ')' . "\n");
+
 				}
-//				echo('			<a href="/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']) . '">' . h($attachment['name']) . '</a>' . "\n");
-//				echo('			(' . number_to_human_size($attachment['size']) . ')' . "\n");
 				echo('		</li>' . "\n");
 			}
 			echo("	</ul>\n");
