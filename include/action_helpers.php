@@ -265,14 +265,30 @@ function autodetect_locale_with_fallback($fallback_locale){
 			$locales_requested[ $qualified_locale ] = 1.0;
 		}
 	}
-	
+
+	//get the required language from the clients URI
+	$lang_req = '';
+
+	if ($_GET && array_key_exists("l", $_GET)) {
+//		echo 'Requested language: ' . htmlspecialchars($_GET["l"]) . '!';	
+		$lang_req = htmlspecialchars($_GET["l"]);	
+//	} else {
+//		echo 'No language requested, using Accept-language';	
+	}
+
 	// Sort them so the most prefered locale is at the beginning
 	arsort($locales_requested);
 	
+	// prefer browser's choise over Accept-language
+	if ( in_array($lang_req, $locales_available) ) {
+		return $lang_req;
+	}
+	
 	// Now look for the first match
 	foreach($locales_requested as $locale_name => $locale_quality){
-		if ( in_array($locale_name, $locales_available) )
+		if ( in_array($locale_name, $locales_available) ){
 			return $locale_name;
+		}
 	}
 	
 	// If nothing matched return the fallback locale
