@@ -140,7 +140,8 @@ $body_class = 'newsgroups';
 			<td>
 				<?= h($newsgroup['last_post']['subject']) ?>
 				<small><?= l('newsgroups', 'last_post_info',
-					sprintf('<abbr title="%s">%s</abbr>', ha($newsgroup['last_post']['author_mail']), h($newsgroup['last_post']['author_name'])),
+//					sprintf('<abbr title="%s">%s</abbr>', ha($newsgroup['last_post']['author_mail']), h($newsgroup['last_post']['author_name'])),
+					sprintf('<abbr title="%s">%s</abbr>', ha($newsgroup['last_post']['author_name']), h($newsgroup['last_post']['author_name'])),
 					timezone_aware_date($newsgroup['last_post']['date'], l('newsgroups', 'last_post_info_date_format'))
 				) ?></small>
 			</td>
