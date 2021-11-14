@@ -164,10 +164,21 @@ function traverse_tree($tree_level){
 					$cache_name = md5($message_id . $display_name).'.mp4';
 					$img_name = md5($message_id . $display_name).'.mp4';
 					$message_data['attachments'][$last_index]['image_format'] = 'MP4';
+				} elseif (preg_match('#video/ogg#', $content_type)) {
+					$cache_name = md5($message_id . $display_name).'.ogg';
+					$img_name = md5($message_id . $display_name).'.ogg';
+					$message_data['attachments'][$last_index]['image_format'] = 'OGG';
+				} elseif (preg_match('#video/webm#', $content_type)) {
+					$cache_name = md5($message_id . $display_name).'.webm';
+					$img_name = md5($message_id . $display_name).'.webm';
+					$message_data['attachments'][$last_index]['image_format'] = 'WEBM';
+				} 
+
+
 					$message_data['attachments'][$last_index]['preview'] = $img_name;
 					$message_data['attachments'][$last_index]['img'] = $img_name;
 //					echo('DEBUG: attached video found: '. $img_name);
-				}
+				
 			}
 
 			return $content_event;
