@@ -8,7 +8,7 @@ return array(
 		// Text for the link in the footer that explains how to setup newsgroups in a mail program
 		// like Thunderbird. The URL of that link can be set in the config file since the process is
 		// often infrastructure specific.
-		'howto_link_text' => 'Howto read newsgroups in a mail program like Thunderbird',
+		'howto_link_text' => 'How to read newsgroups in a mail program like Thunderbird',
 		// Developer credits.
 		// Arguments: user agent name (e.g. 'NNTP-Forum'), version (e.g. '1.0.0'), link to developer
 		'credits' => '%s v%s, developed by %s.',
