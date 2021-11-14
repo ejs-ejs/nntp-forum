@@ -1,15 +1,21 @@
 <?php
 // see config.example.public.php for the details
+
 return array(
 	'nntp' => array(
-			'uri' => 'tcp://news.rkm.lt:119',
-			'timeout' => 10,
-				'options' => array(
-					'ssl' => array(
-								'verify_peer' => false,
+		'uri' => 'tcp://news.rkm.lt:119',
+		'timeout' => 10,
+		'options' => array(
+			'ssl' => array(
+				'verify_peer' => false,
 			)
 		),
+
+				// posting allowed?
+		// if '1', posting will be determined byt the goup info
 		'can_post' => 0,
+		'can_track' => 0,
+
 		'user' => null,
 		'pass' => null
 	),
@@ -20,11 +26,18 @@ return array(
 		'order' => null
 	),
 
-	'title' => 'RKM Newsgroups',
-	'howto_url' => 'http://news.rkm.lt',
-
+	'title' => 'Usenet @ RKM',
+	'howto_url' => 'https://rkm.lt/usenet-serveris/',
 
 	'newsfeeds' => array(
+		/* a small example newsfeed config
+		'example' => array(
+			'newsgroups' => 'all.news-*',
+			'title' => 'All news',
+			'history_duration' => 60 * 60 * 24 * 30, // 1 month
+			'limit' => 10
+		)
+		*/
 	),
 
 	'thumbnails' => array(
@@ -42,9 +55,11 @@ return array(
 		'directory' => 'ou=userlist,dc=example,dc=com'
 	),
 
+
 	'sender_address' => function($login, $name){
 		return "Anonymous <anonymous@anonymous.com>";
 	},
+
 
 	'sender_is_self' => function($mail, $login){
 		return false;
@@ -52,6 +67,7 @@ return array(
 
 	// The language file (locale) used for the forum.
 	'lang' => autodetect_locale_with_fallback('en'),
+
 
 	'suggestions' => array(
 		'forbidden' => array(),
@@ -73,7 +89,7 @@ return array(
 		'watchlist' => null,
 	),
 
-	'user_agent' => 'NNTP-Forum/1.1.2a'
+	'user_agent' => 'NNTP-Forum/1.1.2b'
 );
 
 ?>
