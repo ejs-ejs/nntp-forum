@@ -19,7 +19,11 @@ if ( $message_tree == null )
 $nntp->command('list active ' . $group, 215);
 $group_info = $nntp->get_text_response();
 list($name, $last_article_number, $first_article_number, $post_flag) = explode(' ', $group_info);
+
+$tracking_allowed = $CONFIG['nntp']['can_track'];
+
 $posting_allowed = $CONFIG['nntp']['can_post'] && ($post_flag != 'n');
+// $posting_allowed = 0;
 
 $nntp->close();
 
@@ -90,7 +94,9 @@ $body_class = 'topics';
 <? if($posting_allowed): ?>
 	<li class="new topic"><a href="#"><?= lh('topics', 'new_topic') ?></a></li>
 <? endif ?>
+<? if($tracking_allowed): ?>
 	<li class="all read"><a href="/<?= urlencode($group) ?>?all-read"><?= lh('topics', 'all_read') ?></a></li>
+<? endif ?>
 </ul>
 
 
@@ -164,7 +170,7 @@ $body_class = 'topics';
 			<td>
 				<?= l('topics', 'last_post_info',
 //					sprintf('<abbr title="%s">%s</abbr>', ha($topic['latest_message']['author_mail']), h($topic['latest_message']['author_name'])),
-					sprintf('<abbr title="%s">%s</abbr>', ha($topic['latest_message']), h($topic['latest_message']['author_name'])),
+					sprintf('<abbr title="%s">%s</abbr>', ha($topic['latest_message']['author_name']), h($topic['latest_message']['author_name'])),
 					timezone_aware_date($topic['latest_message']['date'], l('topics', 'last_post_info_date_format'))
 				) ?>
 			</td>
@@ -178,7 +184,9 @@ $body_class = 'topics';
 <? if($posting_allowed): ?>
 	<li class="new topic"><a href="#"><?= lh('topics', 'new_topic') ?></a></li>
 <? endif ?>
+<? if($tracking_allowed): ?>
 	<li class="all read"><a href="/<?= urlencode($group) ?>?all-read"><?= lh('topics', 'all_read') ?></a></li>
+<? endif ?>
 </ul>
 
 <? require(ROOT_DIR . '/include/footer.php') ?>
