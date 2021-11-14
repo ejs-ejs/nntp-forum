@@ -42,9 +42,15 @@ return array(
 				'cafile' => '/path/to/yourcert.pem',
 			)
 		),
+
 		// posting allowed?
 		// if '1', posting will be determined byt the goup info
-		'can_post' => 1,
+		'can_post' => 0,
+
+		// post tracking allowed?
+		// if '1', 'Mark all read' will be displayed
+		'can_track' => 0,
+		
 		// The login for the NNTP server. By default we pick up the HTTP authentication configured in the
 		// webserver. If you want a public reader you can configure the NNTP user here that will be used
 		// by the frontend. If the NNTP server requires no authentication specify `null` as user.
