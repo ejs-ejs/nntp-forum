@@ -2,15 +2,15 @@
 
 /**
  * The `MessageParser` is an event based parser for newsgroup messages (like SAX is for XML).
- * 
+ *
  * The parser works on a line by line basis. You feed it with lines of the message (e.g. out of an
  * NNTP connection) and it processes each new line. This keeps the memory footprint low (only
  * one line at a time) and helps performance (important when dealing with attachments).
- * 
+ *
  * During the parsing the message parser triggers several events:
- * 
+ *
  * 	message-header ( part-header <line event>* part-end )+ message-end
- * 
+ *
  * - `message-header`: Triggered first and only once after all message headers have been parsed.
  *   The handler gets all message headers. All header names are converted to lower case.
  * - For each MIME part:
@@ -29,15 +29,15 @@
  * - `message-end`: Triggered as soon as the `end_of_message()` method of the parser is called. The
  *   handler gets no arguments. This event is useful for postprocessing like encoding the message content
  *   to UTF-8 or converting HTML to plain text.
- * 
+ *
  * Normal non MIME encoded messages are handled like a MIME message with just one part. This
  * way handlers don't need extra modifications to handle non MIME messages.
- * 
+ *
  * Handlers for these events can be given to the constructor as an associative array. Note that any
  * outside variables the handlers changes must be declared with `use(&$var)`. Otherwise the anonymous
  * handler function can not access or change the outside variable. This example code extracts the first
  * `text/plain` part of a message:
- * 
+ *
  * 	$message_data = array('subject' => null, 'content' => null);
  * 	$parser = new MessageParser(array(
  * 		'message-header' => function($headers) use(&$message_data){
@@ -50,7 +50,7 @@
  * 			if ($content_type == 'text/plain' and $message_data['content'] == null) {
  * 				return 'append-content-line';
  * 			}
- * 			
+ *
  * 			// Ignore the content of all other parts (attachments, etc.)
  * 			return null;
  * 		},
@@ -59,12 +59,12 @@
  * 			$message_data['content'] .= $line;
  * 		}
  * 	));
- * 
+ *
  * 	while ( ! $con->end_of_message() )
  * 		$parser->parse_line($con->get_line());
- * 	
+ *
  * 	var_dump($message_data);
- * 
+ *
  */
 
 class MessageParser
@@ -83,6 +83,8 @@ class MessageParser
 				$message_data['newsgroup'] = reset($newsgroups);
 				$message_data['newsgroups'] = $newsgroups;
 				$message_data['id'] = $headers['message-id'];
+//				echo('DEBUG: message-header: ');
+//				print_r($message_data);
 			},
 			'part-header' => function($headers, $content_type, $content_type_params) use(&$message_data){
 				if ( preg_match('#text/(plain|html)#', $content_type) ) {
@@ -106,7 +108,11 @@ class MessageParser
 						$message_data['attachments'][] = array('name' => $name, 'type' => $content_type, 'params' => $content_type_params, 'size' => 0);
 						return 'record-attachment-size';
 					}
+//				echo('DEBUG: part-header: ');
+//				print_r($message_data);
+
 				}
+
 			},
 			'append-content-line' => function($line) use(&$message_data){
 				$message_data['content'] .= $line;
@@ -126,12 +132,12 @@ class MessageParser
 		);
 		return new self($events);
 	}
-	
+
 	/**
 	 * Decodes any "encoded-words" like "=?iso-8859-1?q?this=20is=20some=20text?="
 	 * to UTF-8. This is useful to decode headers in mail and NNTP messages. Assumes that
 	 * the rest of the string is already UTF-8 encoded and leaves it in peace.
-	 * 
+	 *
 	 * The built in function `iconv_mime_decode()` does basically the same but fails on some
 	 * cases and handels text outside of encoded words as US-ASCII encoding.
 	 */
@@ -142,16 +148,16 @@ class MessageParser
 				$word_content = quoted_printable_decode(str_replace('_', ' ', $match['encoded_text']));
 			else
 				$word_content = base64_decode($match['encoded_text']);
-			
+
 			// Decode content to UTF-8
 			return iconv($match['charset'], 'UTF-8', $word_content);
 		}, $content);
 	}
-	
+
 	/**
 	 * Parses an RFC 2822 dates as found in mail headers (e.g. "Wed, 12 Feb 2014 09:15:58 +0000").
 	 * Also works with optional trailing data (e.g. "Wed, 12 Feb 2014 09:15:58 +0000 (UTC)").
-	 * 
+	 *
 	 * Returns a PHP DateTime object containing the timestamp and timezone.
 	 */
 	static function parse_date_and_zone($date_as_string){
@@ -159,10 +165,10 @@ class MessageParser
 		$obj = date_create_from_format(DateTime::RFC2822 . '+', $date_as_string, new DateTimeZone('UTC'));
 		return $obj;
 	}
-	
+
 	/**
 	 * Splits a typical `From` header into its mail and name part.
-	 * 
+	 *
 	 * 	`Mr. X <test@example.com>` → array('Mr. X', 'test@example.com')
 	 * 	`Mr. X <test-at-example.com>` → array('Mr. X', 'test-at-example.com')
 	 * 	`test@example.com`	→	array('test', 'test@example.com')
@@ -176,39 +182,39 @@ class MessageParser
 		$trimmed = trim($decoded_from_header);
 		return array($trimmed, $trimmed);
 	}
-	
+
 	/**
 	 * Parses a type-param header values such as the contents of the Content-Type and Content-Disposition
 	 * headers. Returns an array with the type as the first element and an associative parameter array as
 	 * second element.
-	 * 
+	 *
 	 * Examples:
-	 * 
+	 *
 	 * 	parse_type_params_header('text/plain; charset=utf-8');
 	 * 	// => array('text/plain', array('charset' => 'utf-8'));
 	 */
 	static function parse_type_params_header($type_params_value){
 		$parts = explode(';', $type_params_value);
 		$type = array_shift($parts);
-		
+
 		$parameters = array();
 		foreach($parts as $part){
 			@list($name, $value) = explode('=', $part, 2);
 			$parameters[strtolower(trim($name))] = ($value) ? trim($value, '"') : null;
 		}
-		
+
 		return array($type, $parameters);
 	}
-	
-	
+
+
 	// Event handler functions or callbacks
 	public $events = array();
-	
+
 	// Keeps track of the state of the state machine.
 	private $state = 'message_headers';
 	// Name of the event that should be called for each incomming content line.
 	private $content_event = null;
-	
+
 	// Just a buffer that is filled with the headers of the message or mime part currently parsed
 	private $headers = array();
 	// Stack of mime part boundaries and end boundaries (each element is an array containing these two
@@ -220,8 +226,8 @@ class MessageParser
 	private $default_content_type = 'text/plain';
 	// The transfer encoding of the current message part. No stack necessary since it should not be nested.
 	private $content_transfer_encoding = null;
-	
-	
+
+
 	/**
 	 * Constructor that sets the event handlers for this parser.
 	 */
@@ -234,11 +240,11 @@ class MessageParser
 		);
 		$this->events = array_merge($default_events, $events);
 	}
-	
+
 	/**
 	 * Resets the state machine to the beginning. It's then ready to parse a new message. Useful if you want
 	 * to parse multiple messages with the same state machine and event handler setup.
-	 * 
+	 *
 	 * This functionality could also be implemented by tuning the end states to properly detect the end of a
 	 * message and automatically reset the state machine. However doing it explicit is more reliable and avoids
 	 * high complexity in the end states.
@@ -248,7 +254,7 @@ class MessageParser
 		$this->headers = array();
 		$this->mime_boundaries = array();
 	}
-	
+
 	/**
 	 * Takes one line and dispatches it to the appropriet function for the state this parsing
 	 * automate is currently in.
@@ -257,12 +263,12 @@ class MessageParser
 		$state_function = array($this, $this->state);
 		return call_user_func($state_function, $line);
 	}
-	
+
 	/**
 	 * Markes the end of a message. This triggers the `message-end` event that may be used for post
 	 * processing of message data (e.g. convert HTML to plain text). This function also resets the parser
 	 * state afterwards by calling `reset()`.
-	 * 
+	 *
 	 * If the message was not a MIME message this method also triggers the `part-end` event. This is
 	 * done before the `message-end` event. This way you can write code for MIME messages that will
 	 * also work for normal messages.
@@ -273,7 +279,7 @@ class MessageParser
 		call_user_func($this->events['message-end']);
 		$this->reset();
 	}
-	
+
 	/**
 	 * State function for the message headers. Parses all headers into the `$headers` array.
 	 * If an empty line is encountered the `message-header` event is fired with the `$headers`
@@ -283,11 +289,11 @@ class MessageParser
 	private function message_headers($line){
 		if ($line == '') {
 			// An empty line ends the header list and starts the message body.
-			
+
 			// Fire the message header event so the event handler can extract the subject
 			// and other stuff it's interested in.
 			call_user_func($this->events['message-header'], $this->headers);
-			
+
 			// Now decide if start to parse MIME parts or use the entire message body
 			// as message content.
 			$content_type = isset($this->headers['content-type']) ? $this->headers['content-type'] : $this->default_content_type;
@@ -306,7 +312,8 @@ class MessageParser
 		} elseif ( $line[0] == ' ' or $line[0] == "\t" ) {
 			// Lines that start with a whitespace are additional content of the previous header.
 			// If there is no last header ignore this line.
-			$last_header = end(array_keys($this->headers));
+			$last_headers = array_keys($this->headers);
+			$last_header = end($last_headers);
 			if ($last_header)
 				$this->headers[$last_header] .= ' ' . self::decode_words(trim($line));
 		} else {
@@ -315,7 +322,7 @@ class MessageParser
 			$this->headers[strtolower($header_name)] = self::decode_words(trim($header_content));
 		}
 	}
-	
+
 	/**
 	 * Helper function that decodes the specified line with the transfer encoding set by the last header event.
 	 */
@@ -334,9 +341,9 @@ class MessageParser
 
 		return $line . "\n";
 	}
-	
+
 	/**
-	 * State function to parse a plain text message body. 
+	 * State function to parse a plain text message body.
 	 * This state is never left because plain text messages contain nothing else after the content.
 	 */
 	private function message_body($line){
@@ -346,7 +353,7 @@ class MessageParser
 				call_user_func($line_event, $this->decode_content_line($line));
 		}
 	}
-	
+
 	/**
 	 * State function that parses a MIME body. As soon as the first boundary is encountered
 	 * the `$headers` array is reset (since it will contain the headers of the following part) and
@@ -359,7 +366,7 @@ class MessageParser
 			$this->state = 'mime_part_headers';
 		}
 	}
-	
+
 	/**
 	 * State function to parse the mime part headers. Much like the `message_headers` state but
 	 * if an empty line is found it is decided to use the part as text content (change to `mime_part_text_body`
@@ -384,7 +391,8 @@ class MessageParser
 			}
 		} elseif ( $line[0] == ' ' or $line[0] == "\t" ) {
 			// Lines that start with a whitespace are additional content of the previous header
-			$last_header = end(array_keys($this->headers));
+			$last_headers = array_keys($this->headers);
+			$last_header = end($last_headers);
 			if ($last_header)
 				$this->headers[$last_header] .= ' ' . self::decode_words(trim($line));
 		} else {
@@ -393,13 +401,13 @@ class MessageParser
 			$this->headers[strtolower($header_name)] = self::decode_words(trim($header_content));
 		}
 	}
-	
+
 	/**
 	 * State function to parse the content of a mime part. If the topmost boundary on the stack is encoutered
 	 * we clear the `$header` array for the next parts headers and change back to the `mime_part_headers`
 	 * state. If an end boundary is encoutered we pop the topmost boundary from the stack (because we're
 	 * done with that multipart entity) and change back to the `mime_body` state.
-	 * 
+	 *
 	 * Since both types of boundaries end a part the `part-end` event is triggered. If the current line is no
 	 * boundary decode the current transfer encoding and call the current content event if defined. If it isn't
 	 * defined no one is interested in the content and we can discard the line.
