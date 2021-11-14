@@ -17,6 +17,8 @@ body > header { margin: 0 -1em; padding: 0; color: white; background: #db0031; t
 body > header h1 { margin: 0; padding: 0.5em 0.5em; font-size: 1.5em; font-weight: normal; }
 body > header a { text-decoration: none; color: inherit; }
 
+body > header p { font-size: 0.77em; margin: 0; padding: 0.75em 1.2em; border-top: 1px solid white; }
+
 body > header > nav { font-size: 0.77em; margin: 0; padding: 0.75em 1.2em; background: #28698f; border-top: 1px solid white; }
 body > header > nav a:hover { text-decoration: underline; }
 body > header > nav > ul#utilities { float: right; margin: 0; padding: 0; list-style: none; }
@@ -41,7 +43,10 @@ body > header > nav {
 body > footer { font-size: 0.77em; margin: 1em 0; padding: 0; text-align: center; color: gray; }
 body > footer a { color: inherit; text-decoration: none; }
 body > footer a:hover { text-decoration: underline; }
-body > footer a.help { padding-left: 20px; background: url(/styles/help.png) no-repeat left center; }
+body > footer a.help { padding-left: 20px; background: url(/styles/help.png) no-repeat left center; font-size: 1.5em; }
+body > header a.help { margin: 10px 2em; text-align: center; font-size: 1em; }
+body > header a.help:hover { text-decoration: underline; }
+
 
 /* general content styles */
 body > h2 { font-size: 1.5em; margin: 1em 0 0 0; padding: 0; font-family: serif; border-bottom: 1px solid #ccc; }

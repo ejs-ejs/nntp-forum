@@ -28,6 +28,9 @@
 <?			endforeach; ?>
 		</ul>
 	</nav>
+<? if (isset($CONFIG['howto_url'])): ?>
+	<p><a class="help" href="<?= ha($CONFIG['howto_url']) ?>"><?= lh('layout', 'howto_link_text') ?></a><br /></p>
+<? endif ?>
 </header>
 
 <?= $content ?>
