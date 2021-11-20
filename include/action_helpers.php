@@ -238,6 +238,24 @@ function clean_cache($cache_file_name)
 		unlink($CONFIG['cache_dir'] . '/' . basename($cache_file_name));
 }
 
+// return all the translated languages
+function all_locales(){
+	global $CONFIG;
+	// Look what locale files are available
+	$locales_available = array_map(function($path){
+		return basename($path, '.php');
+	}, glob(ROOT_DIR . '/locales/'.'*.php') );
+	foreach($locales_available as $locale) {
+		if ( array_key_exists($locale, $CONFIG['lang_weights'])) {
+			$locales[$locale] = $CONFIG['lang_weights'][$locale]; 
+			} else {
+			$locales[$locale] = 0.1; 
+			}
+		}
+	asort($locales);
+	return array_reverse($locales);
+}
+
 /**
  * A little helper that looks what locales are available and what locales the user preferes
  * (by examining the HTTP `Accept-Language` header). It then returns the most prefered
@@ -254,7 +272,7 @@ function autodetect_locale_with_fallback($fallback_locale){
 	// Look what locale files are available
 	$locales_available = array_map(function($path){
 		return basename($path, '.php');
-	}, glob(ROOT_DIR . '/locales/*.php') );
+	}, glob(ROOT_DIR . '/locales/'.'*.php') );
 	
 	// Get the requested locale names and qualities out of the HTTP header
 	$locales_requested = array();
