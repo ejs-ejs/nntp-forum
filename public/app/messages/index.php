@@ -165,26 +165,26 @@ function traverse_tree($tree_level){
 					$cache_name = md5($message_id . $display_name).'.webm';
 					$img_name = md5($message_id . $display_name).'.webm';
 					$message_data['attachments'][$last_index]['image_format'] = 'WEBM';
-				} 
+				}
 
 
 					$message_data['attachments'][$last_index]['preview'] = $img_name;
 					$message_data['attachments'][$last_index]['img'] = $img_name;
-				
+
 			}
-			
+
 			if ( $content_event == 'record-attachment-size' and preg_match('#application/pdf#', $content_type) ){
 				$last_index = count($message_data['attachments']) - 1;
 				$display_name = $message_data['attachments'][$last_index]['name'];
 				$message_data['attachments'][$last_index]['type'] = 'PDF';
-				
+
 				$cache_name = md5($message_id . $display_name).'.pdf';
 				$img_name = md5($message_id . $display_name).'.pdf';
-				$message_data['attachments'][$last_index]['image_format'] = 'PDF'; 
+				$message_data['attachments'][$last_index]['image_format'] = 'PDF';
 
 				$message_data['attachments'][$last_index]['preview'] = $img_name;
 				$message_data['attachments'][$last_index]['img'] = $img_name;
-				
+
 			}
 			return $content_event;
 		};
@@ -198,7 +198,7 @@ function traverse_tree($tree_level){
 		};
 
 		// We're at the end of an MIME part. If we got raw data to process load the actual image from them.
-		// Create a thumbnail version and put it into the cache. 
+		// Create a thumbnail version and put it into the cache.
 		$message_parser->events['part-end'] = function() use($old_part_end, $CONFIG, &$raw_data, &$message_data){
 			if ( $raw_data !== null ){
 				$data = join('', $raw_data);
@@ -210,7 +210,7 @@ function traverse_tree($tree_level){
 				} else {
 					$image = @imagecreatefromstring($data);
 					$preview_created = false;
-				} 
+				}
 
 				if ($image) {
 // do not create the preview image. Makes no sense. Push the resized original image instead.
@@ -245,12 +245,13 @@ function traverse_tree($tree_level){
 							$preview_created = @imagejpeg($preview_image, ROOT_DIR . '/public/thumbnails/' . $cache_name, $CONFIG['thumbnails']['quality']);
 							imagedestroy($preview_image);
 						} else {
+							$preview_created = 1;
 							$img_created = @imagejpeg($image, ROOT_DIR . '/public/thumbnails/' . $img_name, $CONFIG['thumbnails']['quality']);
 						}
 					}
 					imagedestroy($image);
 
-				} 
+				}
 
 				if (!$preview_created) {
 					// If we could not create the preview kill the preview name from the message data
@@ -317,10 +318,10 @@ function traverse_tree($tree_level){
 							} elseif ($attachment['image_format'] == 'WEBM') {
 							echo '<source src="'.$img_loc.'" type="video/webm">';
 							} else {
-							echo l("Unsupported video format.").' </video></a></li>' . "\n";	
+							echo l("Unsupported video format.").' </video></a></li>' . "\n";
 							}
 							echo l("Your browser does not support the video tag.").' </video></a></li>' . "\n";
-					} elseif ($attachment['type'] == 'IMAGE') { 
+					} elseif ($attachment['type'] == 'IMAGE') {
 						if ($attachment['image_format'] == 'GIF') {
 							$img_loc = '/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']);
 							echo('<li class="thumbnail"><a href="' . $img_loc . '"><img src="'.$img_loc.'" width="'.$CONFIG['thumbnails']['width'].'"></a></li>' . "\n");
