@@ -4,6 +4,8 @@
 	<meta charset="utf-8">
 	<title><? if ($title) echo(h($title) . ' - '); ?><?= h(lt($CONFIG['title'])) ?></title>
 	<link rel="stylesheet" type="text/css" href="/styles/soft-red.css" />
+
+
 <?	foreach($CONFIG['newsfeeds'] as $name => $newsfeed): ?>
 	<link href="/<?= urlencode($name) ?>.xml" rel="alternate" title="<?= h(lt($newsfeed['title'])) ?>" type="application/atom+xml" />
 <?	endforeach ?>
@@ -13,6 +15,16 @@
 <header>
 	<h1><a href="/"><?= h(lt($CONFIG['title'])) ?></a></h1>
 	<nav>
+<?	if ( $CONFIG['lang_selection'] ): 
+		$languages = all_locales(); ?>
+		<ul id="lang">
+<?		foreach($languages as $lang => $weight): ?>
+			<li><a href="?l=<?= ha($lang); ?>"><?= strtoupper(h($lang)); ?></a></li>
+<?		endforeach; ?>
+		</ul>
+<?	endif ?>
+
+
 		<ul id="utilities">
 <?	foreach($CONFIG['newsfeeds'] as $name => $newsfeed): ?>
 			<li><a class="newsfeed" href="/<?= urlencode($name) ?>.xml" type="application/atom+xml" rel="alternate"><?= h(lt($newsfeed['title'])) ?></a></li>
@@ -39,6 +51,14 @@
 <? if (isset($CONFIG['howto_url'])): ?>
 	<a class="help" href="<?= ha($CONFIG['howto_url']) ?>"><?= lh('layout', 'howto_link_text') ?></a><br />
 <? endif ?>
+<? if (isset($CONFIG['cookies']['privacy_policy'])): ?>
+	<a class="privacy" href="<?= ha($CONFIG['cookies']['privacy_policy']) ?>"><?= lh('layout', 'privacy_policy_link_text') ?></a><br />
+    <? if (isset($CONFIG['cookies']['google_analytics_id'])): ?>
+	<script async src="https://www.googletagmanager.com/gtag/js?id=<?= $CONFIG['cookies']['google_analytics_id']?>"></script>		
+    <? endif ?>
+
+<? endif ?>
+
 <?	list($name, $version) = explode('/', $CONFIG['user_agent'], 2) ?>
 	<?= l('layout', 'credits', $name, $version, '<a href="http://arkanis.de/">Stephan Soller</a>') ?> 
 	<?= l('layout', 'credits_3rd_party', '<a href="http://www.famfamfam.com/lab/icons/silk/">Silk Icons</a>', '<a href="http://www.famfamfam.com/">famfamfam.com</a>') ?> 
