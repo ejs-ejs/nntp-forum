@@ -28,6 +28,11 @@ return array(
 
 	'title' => 'Usenet @ RKM',
 	'howto_url' => 'https://rkm.lt/usenet-serveris/',
+	'lang_selection' => true,
+	'lang_weights' => array(
+		'lt' => 1,
+		'en' => 0.9,
+		),
 
 	'newsfeeds' => array(
 		/* a small example newsfeed config
@@ -40,12 +45,23 @@ return array(
 		*/
 	),
 
+	'experimental' => array(
+		'uudecode' => true // uudecode text/plain message 
+	),
+
 	'thumbnails' => array(
+		'create' => false,
 		'enabled' => true,
 		'width' => 400,
 		'height' => 400,
 		'quality' => 80,
 		'expire_time' => 60 * 60 * 24 * 7  // one week
+	),
+
+	'cookies' => array(
+		'privacy_policy' => 'http://rkm.lt/',
+		'gdpr' => '',
+		'google_analytics_id' => 'G-CB136B63C7',
 	),
 
 	'ldap' => array(
