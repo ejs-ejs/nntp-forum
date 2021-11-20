@@ -105,7 +105,7 @@ return array(
 		'watchlist' => null,
 	),
 
-	'user_agent' => 'NNTP-Forum/1.1.2b'
+	'user_agent' => 'NNTP-Forum/1.1.2b ($Id$)'
 );
 
 ?>
