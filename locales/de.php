@@ -9,6 +9,8 @@ return array(
 		// like Thunderbird. The URL of that link can be set in the config file since the process is
 		// often infrastructure specific.
 		'howto_link_text' => 'Newsgroups in E-Mail-Program (z.B. Thunderbird) einrichten',
+
+		'privacy_policy_link_text' => 'Datenschutzerklärung',
 		// Developer credits.
 		// Arguments: user agent name (e.g. 'NNTP-Forum'), version (e.g. '1.0.0'), link to developer
 		'credits' => '%s v%s, entwickelt von %s.',
@@ -274,7 +276,7 @@ Beginnen mit einem `>`-Zeichen:
 		// The text of the notification mail send to users
 		// Arguments: Name of the author, link to the message, link to the subscriptions page
 		'mail' => "%s hat auf eine deiner abbonierten Nachrichten geantwortet: %s.\n\nDu kannst deine Abbos hier löschen: %s."
-		'mail' => ""
+//		'mail' => ""
 	),
 	
 	'months' => array('Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'),

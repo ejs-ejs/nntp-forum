@@ -9,6 +9,9 @@ return array(
 		// like Thunderbird. The URL of that link can be set in the config file since the process is
 		// often infrastructure specific.
 		'howto_link_text' => 'How to read newsgroups in a mail program like Thunderbird',
+
+		'privacy_policy_link_text' => 'Our privacy policy',
+
 		// Developer credits.
 		// Arguments: user agent name (e.g. 'NNTP-Forum'), version (e.g. '1.0.0'), link to developer
 		'credits' => '%s v%s, developed by %s.',
