@@ -29,6 +29,13 @@ body > header > nav > ul#breadcrumbs { overflow: hidden; margin: 0; padding: 0; 
 body > header > nav > ul#breadcrumbs > li { float: left; margin: 0 1em 0 0; padding: 0; }
 body > header > nav > ul#breadcrumbs > li:before { content: '→'; margin-right: 1em; }
 body > header > nav > ul#breadcrumbs > li:first-child:before { content: none; }
+body > header > nav > ul#lang { float: right; margin: 0; padding: 0; list-style: none; }
+body > header > nav > ul#lang > li { display: inline; margin-left: 0.5em; }
+body > header > nav > ul#lang > li:before { content: '|'; margin-right: 1em; }
+body > header > nav > ul#lang > li:first-child:before { content: none; }
+body > header > nav > ul#lang > li > a.newsfeed { padding: 1px 0 1px 20px; background: url(/styles/feed.png) left center no-repeat; }
+body > header > nav > ul#lang > li > a.subscriptions { padding: 1px 0 1px 20px; background: url(/styles/bell.png) left center no-repeat; }
+
 
 body > header {
 	background: -moz-linear-gradient(top, #EA002E 0%, #AF0023 100%);
@@ -46,6 +53,8 @@ body > footer a:hover { text-decoration: underline; }
 body > footer a.help { padding-left: 20px; background: url(/styles/help.png) no-repeat left center; font-size: 1.5em; }
 body > header a.help { margin: 10px 2em; text-align: center; font-size: 1em; }
 body > header a.help:hover { text-decoration: underline; }
+body > footer a.privacy { margin: 10px 2em; text-align: center; font-size: 0.75em; }
+body > footer a.privacy:hover { text-decoration: underline; }
 
 
 /* general content styles */
