@@ -1,18 +1,17 @@
 <?php
-
 /**
  * Escapes the specified text so it can be safely inserted as HTML tag content.
  * It's UTF-8 safe.
- * 
- * Since this function is made for HTML content it does not escape single or 
+ *
+ * Since this function is made for HTML content it does not escape single or
  * double quotes ("). If you want to insert something as an attribute value use
  * the ha() function.
- * 
+ *
  * Since it's meant for displaying stuff in HTML this function removes invalid
  * UTF-8 code points. This can cause security problems if you output commands
  * or data with it. That is used by other systems. See `ENT_IGNORE` flag of
  * PHPs `htmlspecialchars()` function.
- * 
+ *
  * This is a shortcut mimicing the Ruby on Rails "h" helper.
  */
 function h($text_to_escape){
@@ -22,13 +21,13 @@ function h($text_to_escape){
 /**
  * Escapes the specified text so it can be safely inserted into an HTML attribute.
  * It's UTF-8 safe.
- * 
+ *
  * Since it's meant for displaying stuff in HTML this function removes invalid
  * UTF-8 code points. This can cause security problems if you output commands
  * or data with it. That is used by other systems. See `ENT_IGNORE` flag of
  * PHPs `htmlspecialchars()` function. `ENT_SUBSTITUTE` would be more
  * suitable here but requires PHP 5.4.
- * 
+ *
  * This is a shortcut mimicing the Ruby on Rails "h" helper.
  */
 function ha($text_to_escape){
@@ -38,7 +37,7 @@ function ha($text_to_escape){
 /**
  * General localization helper to lookup entries from a language file. The argument list
  * is processed by the function itself.
- * 
+ *
  * Some things to keep in mind:
  * - If the key resolves to something else than a string in the language file (e.g. an array) the
  *   data from the language file is returned as it is. No `printf` string substitution is performed.
@@ -49,10 +48,10 @@ function ha($text_to_escape){
  */
 function l(){
 	global $_LOCALE;
-	
+
 	$entry = $_LOCALE;
 	$args = func_get_args();
-	
+
 	for($i = 0; $i < count($args); $i++){
 		$key = $args[$i];
 		if ( array_key_exists($key, $entry) ) {
@@ -64,7 +63,7 @@ function l(){
 			break;
 		}
 	}
-	
+
 	$format_args = array_slice($args, $i + 1);
 	return (is_string($entry) and count($format_args) > 0) ? vsprintf($entry, $format_args) : $entry;
 }
@@ -92,14 +91,14 @@ function lha(){
  */
 function lt($text_or_array){
 	global $CONFIG;
-	
+
 	if ( is_array($text_or_array) ){
 		if ( isset($text_or_array[$CONFIG['lang']]) )
 			return $text_or_array[$CONFIG['lang']];
 		else
 			return reset($text_or_array);
 	}
-	
+
 	return $text_or_array;
 }
 
@@ -113,11 +112,11 @@ function number_to_human_size($bytes){
 	$border = 1024 * 1.5;
 	if ($bytes < $border)
 		return sprintf('%u Byte', $bytes);
-	
+
 	$bytes /= 1024;
 	if ($bytes < $border)
 		return sprintf('%u KiByte', $bytes);
-	
+
 	$bytes /= 1024;
 	return sprintf('%.1f MiByte', $bytes);
 }
@@ -126,7 +125,7 @@ function number_to_human_size($bytes){
  * Returns a <time> element that displays $date in the specified $format (see http://php.net/date).
  * The <time> element also contains additional information so the timezone-converter.js script can
  * convert the date to the users local timezone.
- * 
+ *
  * Since the users timezone can only be queried via JavaScript this has to be done on the client
  * side. If the script fails the date is displayed in the timezone specified in the date itself and
  * a timezone abbreviation is added ('T' format of PHPs date() function). This ensures that users
@@ -135,6 +134,4 @@ function number_to_human_size($bytes){
 function timezone_aware_date($date, $format){
 	return sprintf('<time dateTime="%s" data-format="%s">%s %s</time>', ha($date->format('c')), ha($format), h($date->format($format)), h($date->format('T')));
 }
-
-
 ?>
