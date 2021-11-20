@@ -101,8 +101,6 @@ function traverse_tree($tree_level){
 		$old_message_header = $message_parser->events['message-header'];
 
 		$old_part_header = $message_parser->events['part-header'];
-//			echo('DEBUG: parts-header event: ');
-//			print_r($old_part_header);
 
 		$old_record_attachment_size = $message_parser->events['record-attachment-size'];
 		$old_part_end = $message_parser->events['part-end'];
@@ -114,8 +112,6 @@ function traverse_tree($tree_level){
 		// Only record the message ID from the message headers. We need it to build a unique hash.
 		$message_parser->events['message-header'] = function($headers) use($old_message_header, &$message_id){
 			$message_id = $headers['message-id'];
-//				echo('DEBUG: message-header event: ');
-//				print_r($headers);
 
 			return $old_message_header($headers);
 		};
@@ -146,13 +142,10 @@ function traverse_tree($tree_level){
 					$message_data['attachments'][$last_index]['img'] = $img_name;
 
 				}
-//				echo('DEBUG: attached image found: '. $img_name);
 
 				// If there is no cached version available kick of the data recording and preview generation
 				if ( ! file_exists(ROOT_DIR . '/public/thumbnails/' . $cache_name) )
 					$raw_data = array();
-//			} else {
-//				echo('DEBUG: attachment found: '. $content_type);
 
 			}
 			// video parsing goes here
@@ -177,7 +170,6 @@ function traverse_tree($tree_level){
 
 					$message_data['attachments'][$last_index]['preview'] = $img_name;
 					$message_data['attachments'][$last_index]['img'] = $img_name;
-//					echo('DEBUG: attached video found: '. $img_name);
 				
 			}
 			
@@ -192,7 +184,6 @@ function traverse_tree($tree_level){
 
 				$message_data['attachments'][$last_index]['preview'] = $img_name;
 				$message_data['attachments'][$last_index]['img'] = $img_name;
-//				echo('DEBUG: attached PDF found: '. $img_name);
 				
 			}
 			return $content_event;
@@ -222,21 +213,24 @@ function traverse_tree($tree_level){
 				} 
 
 				if ($image) {
-					$width = imagesx($image);
-					$height = imagesy($image);
+// do not create the preview image. Makes no sense. Push the resized original image instead.
+					 if ( $CONFIG['thumbnails']['create'] ) {
+						$width = imagesx($image);
+						$height = imagesy($image);
 
-					if ($width > $height) {
-						// Landscape format
-						$preview_width = $CONFIG['thumbnails']['width'];
-						$preview_height = $height / ($width / $CONFIG['thumbnails']['width']);
-					} else {
-						// Portrait format
-						$preview_height = $CONFIG['thumbnails']['height'];
-						$preview_width = $width / ($height / $CONFIG['thumbnails']['height']);
+						if ($width > $height) {
+							// Landscape format
+							$preview_width = $CONFIG['thumbnails']['width'];
+							$preview_height = $height / ($width / $CONFIG['thumbnails']['width']);
+						} else {
+							// Portrait format
+							$preview_height = $CONFIG['thumbnails']['height'];
+							$preview_width = $width / ($height / $CONFIG['thumbnails']['height']);
+						}
+
+						$preview_image = imagecreatetruecolor($preview_width, $preview_height);
+						imagecopyresampled($preview_image, $image, 0, 0, 0, 0, $preview_width, $preview_height, $width, $height);
 					}
-
-					$preview_image = imagecreatetruecolor($preview_width, $preview_height);
-					imagecopyresampled($preview_image, $image, 0, 0, 0, 0, $preview_width, $preview_height, $width, $height);
 
 					$last_index = count($message_data['attachments']) - 1;
 					$cache_name = $message_data['attachments'][$last_index]['preview'];
@@ -247,10 +241,13 @@ function traverse_tree($tree_level){
 						$preview_created = 1;
 						$img_created = @imagegif($image, ROOT_DIR . '/public/thumbnails/' . $img_name);
 					} else {
-						$preview_created = @imagejpeg($preview_image, ROOT_DIR . '/public/thumbnails/' . $cache_name, $CONFIG['thumbnails']['quality']);
-						$img_created = @imagejpeg($image, ROOT_DIR . '/public/thumbnails/' . $img_name, $CONFIG['thumbnails']['quality']);
+						 if ( $CONFIG['thumbnails']['create'] ) {
+							$preview_created = @imagejpeg($preview_image, ROOT_DIR . '/public/thumbnails/' . $cache_name, $CONFIG['thumbnails']['quality']);
+							imagedestroy($preview_image);
+						} else {
+							$img_created = @imagejpeg($image, ROOT_DIR . '/public/thumbnails/' . $img_name, $CONFIG['thumbnails']['quality']);
+						}
 					}
-					imagedestroy($preview_image);
 					imagedestroy($image);
 
 				} 
@@ -328,7 +325,14 @@ function traverse_tree($tree_level){
 							$img_loc = '/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']);
 							echo('<li class="thumbnail"><a href="' . $img_loc . '"><img src="'.$img_loc.'" width="'.$CONFIG['thumbnails']['width'].'"></a></li>' . "\n");
 						} else {
-					        echo('<li class="thumbnail"><a href="/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']) . '"><img src="'.$img_loc.'" width="'.$CONFIG['thumbnails']['width'].'"></a></li>' . "\n");
+							if ( $CONFIG['thumbnails']['create'] ) {
+								$img_loc = '/thumbnails/' . $attachment['preview'];
+								echo('<li class="thumbnail"><a href="/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']) . '"><img src="'.$img_loc.'" width="'.$CONFIG['thumbnails']['width'].'"></a></li>' . "\n");
+							} else {
+								$img_loc = '/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']);
+                                                        echo('<li class="thumbnail"><a href="' . $img_loc . '"><img src="'.$img_loc.'" width="'.$CONFIG['thumbnails']['width'].'"></a></li>' . "\n");
+//                                              e
+							}
 						}
 					} else {
 						echo('<li> You should not be here, bro.</li>');
