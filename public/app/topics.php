@@ -88,7 +88,13 @@ $scripts[] = 'topics.js';
 $body_class = 'topics';
 ?>
 
-<h2><?= h($title) ?></h2>
+<? if ( $CONFIG['google_search_id'] ): ?>
+	<table width="100%" class="hdr"><tr><td width="61%"><h2> <?= h($title) ?></h2></td><td>
+	<script async src="https://cse.google.com/cse.js?cx= <?= $CONFIG['google_search_id'] ?> "></script><div class="gcse-search"><script>$(".gsc-search-button").click(function() {$("#searchresults").show();}</script></div></td></tr></table>
+<? else: ?>
+	<h2> <?= h($title) ?></h2>
+<? endif ?>
+
 
 <ul class="actions above">
 <? if($posting_allowed): ?>
