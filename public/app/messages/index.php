@@ -67,7 +67,16 @@ $breadcrumbs[$title] = '/' . $group . '/' . $topic_number;
 $scripts[] = 'messages.js';
 $body_class = 'messages';
 
-echo('<h2>' . h($title) . '</h2>');
+//echo('<h2>' . h($title) . '</h2>');
+
+if ( $CONFIG['google_search_id'] ) {
+	echo('<table width="100%" class="hdr"><tr><td width="61%"><h2>' . h($title) . '</h2></td><td>');
+
+	echo('<script async src="https://cse.google.com/cse.js?cx=' .$CONFIG['google_search_id'] . '"></script><div class="gcse-search"><script>$(".gsc-search-button").click(function() {$("#searchresults").show();}</script></div></td></tr></table>');
+} else{
+	echo('<h2>' . h($title) .'</h2>');
+}
+
 
 
 // A recursive tree walker function. Unfortunately necessary because we start the recursion
@@ -100,9 +109,9 @@ function traverse_tree($tree_level){
 		// Original event handlers. Remember them here to call them later on.
 		$old_message_header = $message_parser->events['message-header'];
 		$old_part_header = $message_parser->events['part-header'];
-
 		$old_record_attachment_size = $message_parser->events['record-attachment-size'];
 		$old_part_end = $message_parser->events['part-end'];
+		$old_message_end = $message_parser->events['message-end'];
 
 		// State variables used across our event handlers
 		$message_id;
@@ -244,13 +253,14 @@ function traverse_tree($tree_level){
 							$preview_created = @imagejpeg($preview_image, ROOT_DIR . '/public/thumbnails/' . $cache_name, $CONFIG['thumbnails']['quality']);
 							imagedestroy($preview_image);
 						} else {
-							$preview_created = 1;
-							$img_created = @imagejpeg($image, ROOT_DIR . '/public/thumbnails/' . $img_name, $CONFIG['thumbnails']['quality']);
+							$preview_created = 1; 
 						}
+						$img_created = @imagejpeg($image, ROOT_DIR . '/public/thumbnails/' . $img_name, $CONFIG['thumbnails']['quality']);
+
 					}
 					imagedestroy($image);
 
-				}
+				} 
 
 				if (!$preview_created) {
 					// If we could not create the preview kill the preview name from the message data
@@ -262,6 +272,162 @@ function traverse_tree($tree_level){
 			}
 			return $old_part_end();
 		};
+		
+		// at the end of message parsing
+		
+		if ( $CONFIG['experimental']['uudecode'] ) {
+			$message_parser->events['message-end'] = function() use($old_message_end, $CONFIG, &$message_data){
+				
+				// some NNTP clients will send a malformed message,
+				// containing UUencoded data in the text/plain format
+				//	print_r($message_data);
+				
+				
+				if ( preg_match('#NewsTap/5.5*#', $message_data['user-agent']) ||  preg_match('#PiaoHong*#', $message_data['user-agent']) ) {
+					
+					echo('<p>DEBUG: GOT ONE: print message data: </p>');
+					//print_r($message_data['content']);	
+					
+					//var_dump($message_data);
+					$last_index = count($message_data['attachments']) - 1;
+					if ( $last_index < 0 ) {
+						$last_index = 0;
+						$message_data['attachments'] = Array();
+					}
+					echo 'Number of attachments: ' . count($message_data['attachments']) . '['. $last_index .']';						
+						
+					// get the position of the trailing 'end' 
+					// and the starting 'begin 644 ...'					
+					$last_att =  strrpos($message_data['content'], 'end');
+					$first_att = strrpos($message_data['content'], 'begin 644 ');
+						
+					if ($last_att && $first_att) {
+						//	echo 'Found starting "begin 644"';
+						$attachments = substr($message_data['content'], $first_att);
+							
+						$message_data['content'] = substr($message_data['content'], 0, $first_att);
+						//echo 'BODY: '. $body;
+						//	echo 'ATTS: '. $attachments;
+						
+						// separating ATT name ad body
+						$name_ends = strpos($attachments, "\n");
+						$att1_name=substr($attachments, 0, $name_ends);
+						$att1_name = substr($att1_name,10);
+						
+						//$atts=substr($attachments, $name_ends + 1);
+						//	echo bin2hex($atts);
+						//echo '<p>START position '. $first_att .', END position: ' . strrpos($attachments, "end", 0) .' of '. strlen($attachments).' symbols</p>';
+						
+						//$atts=substr($atts, 0, strrpos($atts, "end", -5));
+						$atts=substr($attachments, $name_ends + 1, strrpos($attachments, "end", 0));
+								
+							$message_data['attachments'][$last_index]['name'] = htmlspecialchars($att1_name);
+							
+							//$data = join('', $atts);
+							//	$data = trim($atts, ' ');
+							//	echo bin2hex($atts);
+							//$data = $atts;
+							//	echo $data;
+						//	echo $atts;
+							//$data = convert_uudecode(trim($atts, ' '));
+							$data = convert_uudecode($atts);
+							//$data = convert_uudecode($attachments);
+								//echo $data;
+								
+								$imagepath = ROOT_DIR . '/public/thumbnails/'.md5($message_data['id']).'temp.file';
+								$txt_created = file_put_contents($imagepath.'.txt', $attachments);
+								$img_created = file_put_contents($imagepath, $data);
+								$image = imagecreatefromstring(file_get_contents($imagepath)); 
+								//unlink($imagepath);
+							//echo $atts;
+							//$image = @imagecreatefromstring($data);
+							
+							$message_data['attachments'][$last_index]['size'] = strlen($data);
+								
+							if ($image) {
+								$width = imagesx($image);
+								$height = imagesy($image);
+								$size_info = getimagesizefromstring($atts);
+								if ( $size_info) {
+									//print_r($size_info);
+									echo 'Image '. $width .' by ' .$height . 'pixels';
+								}  else {
+									echo 'Unable to determine size, something\'s wrong: '. $size_info;
+								}
+								} else {
+							//		echo 'Unable to create an image, something\'s wrong: ' . $atts;		
+									echo 'Unable to create an image, something\'s wrong';
+								}
+
+							$message_data['attachments'][$last_index]['type'] = 'IMAGE';
+						//	echo 'DEBUG: setting type to IMAGE';
+							
+							if ($size_info['mime'] == 'image/jpeg' ) {
+								// alter file name
+								$att1_name = substr($att1_name, 0, strpos($att1_name, ".", -5));
+								echo $att1_name;
+								$att1_name = $att1_name . '.jpg';
+								$message_data['attachments'][$last_index]['name'] = $att1_name;
+								
+								$message_data['attachments'][$last_index]['params']['image_format'] = 'JPEG';
+							
+								$cache_name = md5($message_data['id'] . $att1_name).'.img.jpg';
+								$img_name = md5($message_data['id'] . $att1_name).'.img.jpg';
+								
+								$message_data['attachments'][$last_index]['preview'] = $cache_name;
+								$message_data['attachments'][$last_index]['img'] = $img_name;
+					
+								//	if ($width > $height) {
+								//	// Landscape format
+								//		$preview_width = $CONFIG['thumbnails']['width'];
+								//		$preview_height = $height / ($width / $CONFIG['thumbnails']['width']);
+								//	} else {
+								//	// Portrait format
+								//		$preview_height = $CONFIG['thumbnails']['height'];
+								//		$preview_width = $width / ($height / $CONFIG['thumbnails']['height']);
+								//	}
+									
+									$preview_width = $width;
+									$preview_height = $height;
+									
+								$preview_image = imagecreatetruecolor($preview_width, $preview_height);
+								imagecopyresampled($preview_image, $image, 0, 0, 0, 0, $preview_width, $preview_height, $width, $height);
+								
+								$preview_created = @imagejpeg($preview_image, ROOT_DIR . '/public/thumbnails/' . $cache_name, $CONFIG['thumbnails']['quality']);
+								$img_created = @imagejpeg($image, ROOT_DIR . '/public/thumbnails/' . $img_name, $CONFIG['thumbnails']['quality']);
+								imagedestroy($preview_image);
+								imagedestroy($image);
+					
+					
+							} elseif ($size_info['mime'] == 'image/gif' ) {
+								$message_data['attachments'][$last_index]['params']['image_format'] = 'GIF';
+								$cache_name = md5($message_id . $message_data['attachments'][$last_index]['name']).'.gif';
+								$img_name = $cache_name;
+								$message_data['attachments'][$last_index]['preview'] = $img_name;
+								$message_data['attachments'][$last_index]['img'] = $img_name;
+								$preview_created = 1;
+								$img_created = @imagegif($image, ROOT_DIR . '/public/thumbnails/' . $img_name);
+							} elseif ($size_info['mime'] == 'image/png' ) {
+								$message_data['attachments'][$last_index]['params']['image_format'] = 'PNG';
+								$cache_name = md5($message_id . $message_data['attachments'][$last_index]['name']).'.png';
+								$img_name = $cache_name;
+								$message_data['attachments'][$last_index]['preview'] = $img_name;
+								$message_data['attachments'][$last_index]['img'] = $img_name;
+								$preview_created = 1;
+								$img_created = @imagepng($image, ROOT_DIR . '/public/thumbnails/' . $img_name);
+							//} else {
+								//	$message_data['attachments'][$last_index]['image_format'] = '';
+							}
+							
+							
+						//		echo 'Name: '. $att1_name;
+								//print_r($atts);
+						} // there was UUencoded image(s) inside
+						
+					} // end checking for problematic clients
+			return $old_message_end();
+			};
+		} // end of experimental feature
 	}
 
 	echo("<ul>\n");
@@ -298,6 +464,7 @@ function traverse_tree($tree_level){
 			echo('	<ul class="attachments">' . "\n");
 			echo('		<li>' . lh('messages', 'attachments') . '</li>' . "</br>\n");
 			foreach($message_data['attachments'] as $attachment){
+			//	var_dump($attachment);
 				if ( isset($attachment['preview']) ) {
 					$img_loc = '/thumbnails/'.urlencode($attachment['preview']);
 
@@ -317,21 +484,20 @@ function traverse_tree($tree_level){
 							} elseif ($attachment['image_format'] == 'WEBM') {
 							echo '<source src="'.$img_loc.'" type="video/webm">';
 							} else {
-							echo l("Unsupported video format.").' </video></a></li>' . "\n";
+							echo l("Unsupported video format.").' </video></a></li>' . "\n";	
 							}
 							echo l("Your browser does not support the video tag.").' </video></a></li>' . "\n";
-					} elseif ($attachment['type'] == 'IMAGE') {
+					} elseif ($attachment['type'] == 'IMAGE') { 
 						if ($attachment['image_format'] == 'GIF') {
 							$img_loc = '/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']);
 							echo('<li class="thumbnail"><a href="' . $img_loc . '"><img src="'.$img_loc.'" width="'.$CONFIG['thumbnails']['width'].'"></a></li>' . "\n");
 						} else {
-							if ( $CONFIG['thumbnails']['create'] ) {
+							 if ( $CONFIG['thumbnails']['create'] ) {
 								$img_loc = '/thumbnails/' . $attachment['preview'];
-								echo('<li class="thumbnail"><a href="/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']) . '"><img src="'.$img_loc.'" width="'.$CONFIG['thumbnails']['width'].'"></a></li>' . "\n");
-							} else {
+							        echo('<li class="thumbnail"><a href="/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']) . '"><img src="'.$img_loc.'" width="'.$CONFIG['thumbnails']['width'].'"></a></li>' . "\n");
+							} else { 
 								$img_loc = '/' . urlencode($group) . '/' . urlencode($overview['number']) . '/' . urlencode($attachment['name']);
-                                                        echo('<li class="thumbnail"><a href="' . $img_loc . '"><img src="'.$img_loc.'" width="'.$CONFIG['thumbnails']['width'].'"></a></li>' . "\n");
-//                                              e
+								echo('<li class="thumbnail"><a href="' . $img_loc . '"><img src="'.$img_loc.'" width="'.$CONFIG['thumbnails']['width'].'"></a></li>' . "\n");
 							}
 						}
 					} else {
