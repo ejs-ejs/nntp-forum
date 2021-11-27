@@ -226,4 +226,4 @@ $title = l('error_pages', 'not_yet_online', 'title');
 </ul>
 <? endif ?>
 
-<? require(ROOT_DIR . '/include/footer.php') ?>
+require(ROOT_DIR . '/include/footer.php')

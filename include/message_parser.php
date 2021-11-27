@@ -83,8 +83,19 @@ class MessageParser
 				$message_data['newsgroup'] = reset($newsgroups);
 				$message_data['newsgroups'] = $newsgroups;
 				$message_data['id'] = $headers['message-id'];
+				if ( isset($headers['user-agent']) ) {
+					$message_data['user-agent'] = $headers['user-agent'];
+				} elseif ( isset($headers['x-newsreader']) ) {
+					$message_data['user-agent'] = $headers['x-newsreader'];
+				} else {
+					$message_data['user-agent'] = '';
+				}
+				
+//	problematic clients:
+// 	NewsTap/5.5 (iPhone/iPod Touch) 
 //				echo('DEBUG: message-header: ');
 //				print_r($message_data);
+//				print_r($headers);
 			},
 			'part-header' => function($headers, $content_type, $content_type_params) use(&$message_data){
 				if ( preg_match('#text/(plain|html)#', $content_type) ) {
@@ -122,17 +133,20 @@ class MessageParser
 				$message_data['attachments'][$current_attachment_index]['size'] += strlen($line);
 			},
 			'message-end' => function() use(&$message_data){
+
 				// Decode the message content to UTF-8
 				$message_data['content'] = iconv($message_data['content_encoding'], 'UTF-8', $message_data['content']);
 				unset($message_data['content_encoding']);
 				// Strip HTML tags and clear indentions since they would only confuse Markdown
-				if ($message_data['content_type'] == 'text/html')
+				if ($message_data['content_type'] == 'text/html') {
+//					echo 'DEBUG: stripping HTML tags from the content';
 					$message_data['content'] = preg_replace('/^[ \t]+/m', '', strip_tags($message_data['content']));
+				}
 			}
 		);
 		return new self($events);
 	}
-
+	
 	/**
 	 * Decodes any "encoded-words" like "=?iso-8859-1?q?this=20is=20some=20text?="
 	 * to UTF-8. This is useful to decode headers in mail and NNTP messages. Assumes that
