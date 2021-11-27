@@ -3,6 +3,12 @@
 <head>
 	<meta charset="utf-8">
 	<title><? if ($title) echo(h($title) . ' - '); ?><?= h(lt($CONFIG['title'])) ?></title>
+	<? if ( (isset($CONFIG['cookies']['privacy_policy'])) && (isset($CONFIG['cookies']['google_analytics_id']))): ?>
+       <!-- Google Tag Manager -->
+  <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':  new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],  j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=+  'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);+  })(window,document,'script','dataLayer','<?= $CONFIG['cookies']['google_analytics_id']?>');</script>
+  <!-- End Google Tag Manager -->
+<? endif ?>
+
 	<link rel="stylesheet" type="text/css" href="/styles/soft-red.css" />
 
 
@@ -11,11 +17,14 @@
 <?	endforeach ?>
 </head>
 <body class="<?= ha($body_class) ?>">
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=<?= $CONFIG['cookies']['google_analytics_id']?>" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+	<!-- End Google Tag Manager (noscript) -->
 
 <header>
 	<h1><a href="/"><?= h(lt($CONFIG['title'])) ?></a></h1>
 	<nav>
-<?	if ( $CONFIG['lang_selection'] ): 
+<?	if ( $CONFIG['lang_selection'] ):
 		$languages = all_locales(); ?>
 		<ul id="lang">
 <?		foreach($languages as $lang => $weight): ?>
@@ -53,15 +62,17 @@
 <? endif ?>
 <? if (isset($CONFIG['cookies']['privacy_policy'])): ?>
 	<a class="privacy" href="<?= ha($CONFIG['cookies']['privacy_policy']) ?>"><?= lh('layout', 'privacy_policy_link_text') ?></a><br />
-    <? if (isset($CONFIG['cookies']['google_analytics_id'])): ?>
-	<script async src="https://www.googletagmanager.com/gtag/js?id=<?= $CONFIG['cookies']['google_analytics_id']?>"></script>		
-    <? endif ?>
+	<? if (isset($CONFIG['cookies']['privacy_policy'])): ?>
+       <!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=<?=$CONFIG['cookies']['google_analytics_id']?>"></script>
+<script>window.dataLayer = window.dataLayer || [];  function gtag(){dataLayer.push(arguments);} gtag('js', new Date());  gtag('config', '<?=$CONFIG['cookies']['google_analytics_id']?>');</script>
+<? endif ?>
 
 <? endif ?>
 
 <?	list($name, $version) = explode('/', $CONFIG['user_agent'], 2) ?>
-	<?= l('layout', 'credits', $name, $version, '<a href="http://arkanis.de/">Stephan Soller</a>') ?> 
-	<?= l('layout', 'credits_3rd_party', '<a href="http://www.famfamfam.com/lab/icons/silk/">Silk Icons</a>', '<a href="http://www.famfamfam.com/">famfamfam.com</a>') ?> 
+	<?= l('layout', 'credits', $name, $version, '<a href="http://arkanis.de/">Stephan Soller</a>') ?>
+	<?= l('layout', 'credits_3rd_party', '<a href="http://www.famfamfam.com/lab/icons/silk/">Silk Icons</a>', '<a href="http://www.famfamfam.com/">famfamfam.com</a>') ?>
 </footer>
 
 <? foreach($scripts as $script): ?>
