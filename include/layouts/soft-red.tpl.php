@@ -54,10 +54,7 @@
 <? if (isset($CONFIG['cookies']['privacy_policy'])): ?>
 	<a class="privacy" href="<?= ha($CONFIG['cookies']['privacy_policy']) ?>"><?= lh('layout', 'privacy_policy_link_text') ?></a><br />
     <? if (isset($CONFIG['cookies']['google_analytics_id'])): ?>
-	<script>window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);} gtag('js', new Date());
-  gtag('config', '<?= $CONFIG['cookies']['google_analytics_id']?>');
-</script>	
+	<script async src="https://www.googletagmanager.com/gtag/js?id=<?= $CONFIG['cookies']['google_analytics_id']?>"></script>		
     <? endif ?>
 
 <? endif ?>

@@ -99,7 +99,6 @@ function traverse_tree($tree_level){
 	if ( $CONFIG['thumbnails']['enabled'] and extension_loaded('gd') ){
 		// Original event handlers. Remember them here to call them later on.
 		$old_message_header = $message_parser->events['message-header'];
-
 		$old_part_header = $message_parser->events['part-header'];
 
 		$old_record_attachment_size = $message_parser->events['record-attachment-size'];
