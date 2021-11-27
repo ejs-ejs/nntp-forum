@@ -29,6 +29,8 @@ return array(
 	'title' => 'Usenet @ RKM',
 	'howto_url' => 'https://rkm.lt/usenet-serveris/',
 	'lang_selection' => true,
+	'google_search_id' => 'c5cb41d605099e778',
+	'google_search_id' => 'ba25401f545065e24',
 	'lang_weights' => array(
 		'lt' => 1,
 		'en' => 0.9,
@@ -46,7 +48,7 @@ return array(
 	),
 
 	'experimental' => array(
-		'uudecode' => true // uudecode text/plain message 
+		'uudecode' => true // uudecode text/plain message
 	),
 
 	'thumbnails' => array(
